@@ -1,8 +1,8 @@
 package simulaSAAB.tareas;
 
-public interface SistemaActividadHumana {
+public interface SistemaActividadHumana <T>{
 	
-	public void secuenciaPrincipalDeAcciones();
+	public void secuenciaPrincipalDeAcciones(T actor);
 	
 	public SistemaActividadHumana getInstance();
 

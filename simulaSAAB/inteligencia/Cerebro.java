@@ -3,6 +3,11 @@
  */
 package simulaSAAB.inteligencia;
 
+import java.util.List;
+
+import simulaSAAB.comunicacion.Experiencia;
+import simulaSAAB.tareas.SistemaActividadHumana;
+
 /**
  * @author dampher
  *
@@ -17,9 +22,9 @@ public abstract class Cerebro {
 	}
 	
 	
-	public abstract void formarIntenciones();
+	public abstract SistemaActividadHumana tomarDecision(List<SistemaActividadHumana> Actividades);
 	
 	
-	public abstract void evaluarExperiencia();
+	public abstract Experiencia evaluarExperiencia();
 
 }

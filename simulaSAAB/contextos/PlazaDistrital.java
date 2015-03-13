@@ -17,5 +17,9 @@ public class PlazaDistrital extends NodoSaab {
 	public PlazaDistrital() {
 		// TODO Auto-generated constructor stub
 	}
+	
+	public PlazaDistrital(String nombre){
+		this.Nombre=nombre;
+	}
 
 }

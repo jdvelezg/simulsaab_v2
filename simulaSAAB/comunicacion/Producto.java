@@ -19,5 +19,9 @@ public class Producto implements Concepto {
 	public Producto() {
 		// TODO Auto-generated constructor stub
 	}
+	
+	public Producto (String nombre){
+		this.Nombre=nombre;
+	}
 
 }

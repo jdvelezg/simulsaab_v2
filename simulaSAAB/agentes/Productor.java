@@ -3,20 +3,25 @@
  */
 package simulaSAAB.agentes;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import simulaSAAB.comunicacion.Oferta;
 import simulaSAAB.comunicacion.Producto;
 import simulaSAAB.comunicacion.Proposito;
+import simulaSAAB.comunicacion.Experiencia;
+import simulaSAAB.inteligencia.Cerebro;
 import simulaSAAB.tareas.SistemaActividadHumana;
 
 /**
  * @author dampher
  *
  */
-public class Productor implements AgenteInteligente {
+public class Productor implements AgenteInteligente, Oferente {
 	
-	private String Rol;
+	public static String ROL ="productor";
+	
+	public static String INTENCION ="producir";
 	
 	private String Objetivo;
 	
@@ -24,31 +29,44 @@ public class Productor implements AgenteInteligente {
 	
 	private Proposito PropositoVigente;
 	
+	private Cerebro CerebroProductor;
+	
 	private SistemaActividadHumana ActividadVigente;
 	
-	private List<simulaSAAB.comunicacion.Experiencia> Experiencia;
+	private List<Experiencia> Experiencia;
 	
-	private List<Terreno> Terrenos;
+	private List<Terreno> TerrenosCultivables;
 	
 	private List<Oferta> Ofertas;
 	
 	private List<Producto> Productos;
 	
+	private List<Producto> ProductosViablesPercibidos;
+	
+	private List<SistemaActividadHumana> ActividadesEjecutables;
+	
+	private String Estado;
 
 	/**
 	 * 
 	 */
 	public Productor() {
-		// TODO Auto-generated constructor stub
+		
 	}
-
+	
+	
 	/* (non-Javadoc)
 	 * @see simulaSAAB.agentes.AgenteInteligente#atribuirSignificadoAlMundoPercibido()
 	 */
 	@Override
-	public void atribuirSignificadoAlMundoPercibido() {
-		// TODO Auto-generated method stub
-
+	public void percibirMundoSelectivamente() {
+		//Consulta tareas ejecutables en el ambiente
+		
+		this.ActividadesEjecutables =new ArrayList();				
+		
+		for(Terreno finca : TerrenosCultivables){			
+			//ActividadesEjecutables.addAll(finca.getAmbiente().getActividadesViables());
+		}
 	}
 
 	/* (non-Javadoc)
@@ -56,17 +74,24 @@ public class Productor implements AgenteInteligente {
 	 */
 	@Override
 	public void formarIntenciones() {
-		// TODO Auto-generated method stub
-
+		
+		//this.PropositoVigente = new PropositosFactory(this.ROL,this.INTENCION).getProposito();
 	}
+	
+	@Override
+	public void tomarDecisiones() {
+		
+		this.ActividadVigente = CerebroProductor.tomarDecision(ActividadesEjecutables);		
+	}
+	
 
 	/* (non-Javadoc)
 	 * @see simulaSAAB.agentes.AgenteInteligente#actuar()
 	 */
 	@Override
 	public void actuar() {
-		// TODO Auto-generated method stub
-
+		
+		ActividadVigente.secuenciaPrincipalDeAcciones(this);
 	}
 
 	/* (non-Javadoc)
@@ -74,8 +99,43 @@ public class Productor implements AgenteInteligente {
 	 */
 	@Override
 	public void juzgarMundoSegunEstandares() {
-		// TODO Auto-generated method stub
+		
+		this.Experiencia.add(CerebroProductor.evaluarExperiencia());
 
 	}
+	
+	@Override
+	public void generarOferta() {
+		// TODO Auto-generated method stub
+		
+	}
+	
+	/**getter - setters **/
+	
+	@Override
+	public String getEstado() {
+		// TODO Auto-generated method stub
+		return this.Estado;
+	}
+	
+	/**
+	 * Asigna terrenos al productor
+	 * @param t: terreno a agregar
+	 */
+	public void addTerrenos(Terreno t){
+		if(this.TerrenosCultivables==null)
+			this.TerrenosCultivables=new ArrayList();
+		
+		this.TerrenosCultivables.add(t);
+	}
+	
+	@Override
+	public List<Experiencia> getExperiencia(){
+		if(this.Experiencia==null)
+			this.Experiencia = new ArrayList();
+		
+		return this.Experiencia;
+	}
+
 
 }

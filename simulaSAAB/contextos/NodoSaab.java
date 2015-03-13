@@ -5,6 +5,8 @@ package simulaSAAB.contextos;
 
 import java.util.List;
 
+import com.vividsolutions.jts.geom.Geometry;
+
 import simulaSAAB.comunicacion.Producto;
 
 /**
@@ -12,6 +14,10 @@ import simulaSAAB.comunicacion.Producto;
  *
  */
 public class NodoSaab {
+	
+	private String Nombre;
+	
+	private Geometry geometria;
 	
 	private List<Producto> Productos;
 	
@@ -23,6 +29,10 @@ public class NodoSaab {
 		// TODO Auto-generated constructor stub
 	}
 	
+	public NodoSaab(String nombre){
+		this.Nombre=nombre;
+	}
+	
 	
 	public void AlmacenarProductos(){
 		
@@ -30,6 +40,10 @@ public class NodoSaab {
 	
 	public void DespacharProductos(){
 		
+	}
+	
+	public void setGeometria(Geometry g){
+		this.geometria=g;
 	}
 
 }
