@@ -3,6 +3,7 @@ package simulaSAAB.agentes;
 import java.util.List;
 
 import simulaSAAB.comunicacion.Experiencia;
+import simulaSAAB.tareas.SistemaActividadHumana;
 
 public interface AgenteInteligente {
 	
@@ -28,6 +29,9 @@ public interface AgenteInteligente {
 	 */
 	public void actuar();
 	
+	/**
+	 * Genera una nueva experiencia de acuerdo con los resultados obtenidos al ejecutar un sistema de actividad
+	 */
 	public void juzgarMundoSegunEstandares();
 	
 	/**
@@ -44,5 +48,40 @@ public interface AgenteInteligente {
 	 * @return
 	 */
 	public List<Experiencia> getExperiencia();
+	
+	/**
+	 * Devuelve el valor de la mayor utilidad historica obtenida por el agente.
+	 * @return
+	 */
+	public Double getMayorUtilidadObtenida();
+	
+	/**
+	 * Fija el valor de la mayor utilidad obtenida
+	 */
+	public void setMayorUtilidadObtenida(Double valor);
+	
+	/**
+	 * Devuelve las actividades ejecutables por el agente, resultado de su percepcion selectiva del mundo
+	 * @return
+	 */
+	public List<SistemaActividadHumana> getActividadesEjecutables();
+	
+	/**
+	 * Devuelve la actividad vigente del agente
+	 * @return
+	 */
+	public SistemaActividadHumana getActividadVigente();
+	
+	/**
+	 * Devuelve la ultima utilidad obtenida por el agente
+	 * @return Double ultima utilidad obtenida
+	 */
+	public Double getUltimaUtilidadObtenida();
+	
+	/**
+	 * Agrega una nueva experiencia al agente
+	 * @param exp
+	 */
+	public void addExperiencia(Experiencia exp);
 
 }

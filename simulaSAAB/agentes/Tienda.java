@@ -1,5 +1,8 @@
 package simulaSAAB.agentes;
 
+import java.util.List;
+
+import simulaSAAB.comunicacion.Producto;
 import simulaSAAB.contextos.AmbienteLocal;
 import simulaSAAB.contextos.GeografiaFija;
 
@@ -13,6 +16,8 @@ public class Tienda implements GeografiaFija{
 	
 	private AmbienteLocal Ambiente;
 	
+	private List<Producto> Productos;
+	
 	
 	/**
 	 * Constructor
@@ -20,14 +25,16 @@ public class Tienda implements GeografiaFija{
 	 */
 	public Tienda(Geometry geom) {	
 		
-		
+		this.Geometria = geom;
 	}
 	
+		
+	/**Getters & setters**/
 	
 	@Override
 	public Geometry getGeometria() {
 		// TODO Auto-generated method stub
-		return null;
+		return Geometria;
 	}
 
 
@@ -36,4 +43,16 @@ public class Tienda implements GeografiaFija{
 		this.Geometria=geom;
 		
 	}
+
+
+	public AmbienteLocal getAmbiente() {
+		return Ambiente;
+	}
+
+
+	public void setAmbiente(AmbienteLocal ambiente) {
+		Ambiente = ambiente;
+	}
+	
+	
 }

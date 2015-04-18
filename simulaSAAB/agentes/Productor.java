@@ -6,11 +6,15 @@ package simulaSAAB.agentes;
 import java.util.ArrayList;
 import java.util.List;
 
+import repast.simphony.engine.schedule.ScheduledMethod;
 import simulaSAAB.comunicacion.Oferta;
 import simulaSAAB.comunicacion.Producto;
 import simulaSAAB.comunicacion.Proposito;
 import simulaSAAB.comunicacion.Experiencia;
+import simulaSAAB.comunicacion.Dinero;
+import simulaSAAB.global.PropositosFactory;
 import simulaSAAB.inteligencia.Cerebro;
+import simulaSAAB.tareas.ProcesoAgenteHumano;
 import simulaSAAB.tareas.SistemaActividadHumana;
 
 /**
@@ -23,13 +27,15 @@ public class Productor implements AgenteInteligente, Oferente {
 	
 	public static String INTENCION ="producir";
 	
-	private String Objetivo;
-	
-	private simulaSAAB.comunicacion.Dinero Dinero;
+	public static String OBJETIVO = "Garantizar su superviviencia obteniendo recursos para suplir sus necesidades de vida mediante la produccion y comercializacion de productos agrıcolas";
 	
 	private Proposito PropositoVigente;
 	
+	private Dinero Dinero;
+	
 	private Cerebro CerebroProductor;
+	
+	private SistemaActividadHumana ProcesoHumanoDefinido;
 	
 	private SistemaActividadHumana ActividadVigente;
 	
@@ -45,14 +51,45 @@ public class Productor implements AgenteInteligente, Oferente {
 	
 	private List<SistemaActividadHumana> ActividadesEjecutables;
 	
+	private Double MayorUtilidadObtenida;
+	
+	private Double UltimaUtilidadObtenida;
+	
 	private String Estado;
 
 	/**
 	 * 
 	 */
 	public Productor() {
+								
+		Experiencia 		= new ArrayList<Experiencia>();		
+		TerrenosCultivables = new ArrayList<Terreno>();		
+		Ofertas 			= new ArrayList<Oferta>();		
+		Productos 			= new ArrayList<Producto>();
 		
+		ProductosViablesPercibidos 	= new ArrayList<Producto>();		
+		ActividadesEjecutables 		= new ArrayList<SistemaActividadHumana>();		
+		
+		CerebroProductor		= new Cerebro(this);
+		ProcesoHumanoDefinido 	= new ProcesoAgenteHumano();
+		
+		Dinero					= new Dinero(new Double(0),"COP");
+		UltimaUtilidadObtenida 	= new Double(0);
+		MayorUtilidadObtenida	= new Double(0);	
+		
+		Estado 	= "IDLE";	
 	}
+	
+	
+	/**
+	 * Metodo que ejecuta el comportamiento del agente en cada ciclo de reloj enviado por repast
+	 */
+	@ScheduledMethod (start = 1, interval = 2)
+	public void step () {
+		ProcesoHumanoDefinido.secuenciaPrincipalDeAcciones(this);		
+	}
+	
+	
 	
 	
 	/* (non-Javadoc)
@@ -60,12 +97,18 @@ public class Productor implements AgenteInteligente, Oferente {
 	 */
 	@Override
 	public void percibirMundoSelectivamente() {
-		//Consulta tareas ejecutables en el ambiente
 		
-		this.ActividadesEjecutables =new ArrayList();				
-		
-		for(Terreno finca : TerrenosCultivables){			
-			//ActividadesEjecutables.addAll(finca.getAmbiente().getActividadesViables());
+		//Consulta tareas ejecutables en el ambiente		
+		for(Terreno finca : TerrenosCultivables){
+			
+			List<SistemaActividadHumana> actividadesAmbientales = finca.getAmbiente().getActividadesViables();
+			
+			//Filtra su proposito
+			for(SistemaActividadHumana a: actividadesAmbientales){
+				
+				if(a.getProposito().compare(PropositoVigente))
+					this.ActividadesEjecutables.add(a);				
+			}
 		}
 	}
 
@@ -75,7 +118,7 @@ public class Productor implements AgenteInteligente, Oferente {
 	@Override
 	public void formarIntenciones() {
 		
-		//this.PropositoVigente = new PropositosFactory(this.ROL,this.INTENCION).getProposito();
+		PropositoVigente = new PropositosFactory(this.ROL,this.INTENCION).getProposito();
 	}
 	
 	@Override
@@ -100,8 +143,10 @@ public class Productor implements AgenteInteligente, Oferente {
 	@Override
 	public void juzgarMundoSegunEstandares() {
 		
-		this.Experiencia.add(CerebroProductor.evaluarExperiencia());
-
+		Experiencia exp = CerebroProductor.evaluarExperiencia();		
+		if(!Experiencia.contains(exp)){			
+			this.addExperiencia(exp);
+		}
 	}
 	
 	@Override
@@ -136,6 +181,60 @@ public class Productor implements AgenteInteligente, Oferente {
 		
 		return this.Experiencia;
 	}
+
+	@Override
+	public Double getMayorUtilidadObtenida() {
+		// TODO Auto-generated method stub
+		return MayorUtilidadObtenida;
+	}
+
+	@Override
+	public SistemaActividadHumana getActividadVigente() {
+		return ActividadVigente;
+	}
+	
+	@Override
+	public Double getUltimaUtilidadObtenida() {
+		return UltimaUtilidadObtenida;
+	}
+	
+	@Override
+	public void addExperiencia(Experiencia exp) {
+		if(exp!=null)
+			this.Experiencia.add(exp);		
+	}
+	
+	@Override
+	public void setMayorUtilidadObtenida(Double mayorUtilidadObtenida) {
+		MayorUtilidadObtenida = mayorUtilidadObtenida;
+	}
+
+
+	public void setUltimaUtilidadObtenida(Double ultimaUtilidadObtenida) {
+		UltimaUtilidadObtenida = ultimaUtilidadObtenida;
+	}
+
+
+	private void setActividadVigente(SistemaActividadHumana actividadVigente) {
+		ActividadVigente = actividadVigente;
+	}
+
+
+	public List<SistemaActividadHumana> getActividadesEjecutables() {
+		return ActividadesEjecutables;
+	}
+
+
+	private void setActividadesEjecutables(
+			List<SistemaActividadHumana> actividadesEjecutables) {
+		ActividadesEjecutables = actividadesEjecutables;
+	}
+
+
+	
+	
+	
+	
 
 
 }

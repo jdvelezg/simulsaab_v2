@@ -211,7 +211,7 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 				if(!name.equalsIgnoreCase("bogota")){
 					//region.addActividadViable(new ProducirCebollaBulbo());
 					//region.addActividadViable(new ProducirCebolla());
-					//crearProductores(region,numeroProductores,geography,context);
+					crearProductores(region,numeroProductores,geography,context);
 				}		
 				
 				break;
@@ -284,6 +284,11 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 				break;			
 			}			
 		}
+		
+		//Ciera los archivos
+		fiter.close();
+		store.dispose();
+		
 	}
 	
 	private void crearRedSaab(){

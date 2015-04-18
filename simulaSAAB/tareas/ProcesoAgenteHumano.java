@@ -9,6 +9,7 @@ import java.util.logging.Logger;
 
 import simulaSAAB.agentes.AgenteInteligente;
 import simulaSAAB.comunicacion.Producto;
+import simulaSAAB.comunicacion.Proposito;
 
 /**
  * @author dampher
@@ -18,17 +19,21 @@ public class ProcesoAgenteHumano implements SistemaActividadHumana<AgenteIntelig
 	
 	private static Logger LOGGER = Logger.getLogger(ProcesoAgenteHumano.class.getName());
 	
-	private String Enunciado;
+	private static String ENUNCIADO = "Proceso modelo de un agente humano activo en el mundo";
+	
+	private Proposito Proposito;
 	
 	private String Estado;
 	
 	private int paso;
 
 	/**
-	 * 
+	 * Constructor
 	 */
 	public ProcesoAgenteHumano() {
-		// TODO Auto-generated constructor stub
+		
+		Proposito 	= new Proposito("Emular el comportamiento de un agente humano activo en el mundo");
+		Estado 	= EstadosActividad.UNSET.toString();
 	}
 
 	/* (non-Javadoc)
@@ -89,8 +94,34 @@ public class ProcesoAgenteHumano implements SistemaActividadHumana<AgenteIntelig
 	@Override
 	public SistemaActividadHumana getInstance() {
 		// TODO Auto-generated method stub
-		return null;
+		return new ProcesoAgenteHumano();
 	}
+
+	@Override
+	public int getPaso() {
+		// TODO Auto-generated method stub
+		return this.paso;
+	}
+
+	@Override
+	public String getEstado() {
+		// TODO Auto-generated method stub
+		return this.Estado;
+	}
+
+	@Override
+	public String getEnunciado() {
+		// TODO Auto-generated method stub
+		return ENUNCIADO;
+	}
+
+	@Override
+	public Proposito getProposito() {
+		// TODO Auto-generated method stub
+		return Proposito;
+	}
+	
+	
 
 
 }

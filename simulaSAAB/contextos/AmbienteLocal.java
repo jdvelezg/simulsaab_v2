@@ -10,6 +10,7 @@ import com.vividsolutions.jts.geom.Geometry;
 
 import repast.simphony.context.DefaultContext;
 import simulaSAAB.comunicacion.Producto;
+import simulaSAAB.global.VariablesGlobales;
 import simulaSAAB.tareas.SistemaActividadHumana;
 
 /**
@@ -36,7 +37,7 @@ public class AmbienteLocal extends DefaultContext<Object> implements GeografiaFi
 	
 	
 	public AmbienteLocal(){
-		
+		super();
 	}
 	
 	
@@ -66,15 +67,65 @@ public class AmbienteLocal extends DefaultContext<Object> implements GeografiaFi
 
 	@Override
 	public Geometry getGeometria() {
-		return this.Geometria;
-		
+		return this.Geometria;		
 	}
-
 
 	@Override
 	public void setGeometria(Geometry geom) {
 		this.Geometria=geom;
 		
+	}
+
+
+	public String getNombre() {
+		return Nombre;
+	}
+
+
+	public void setNombre(String nombre) {
+		Nombre = nombre;
+	}
+
+
+	public List<Producto> getProductosAgricolasViables() {
+		return ProductosAgricolasViables;
+	}
+
+
+	public void setProductosAgricolasViables(
+			List<Producto> productosAgricolasViables) {
+		ProductosAgricolasViables = productosAgricolasViables;
+	}
+
+
+	public List<SistemaActividadHumana> getActividadesViables() {
+		return ActividadesViables;
+	}
+
+
+	public void setActividadesViables(
+			List<SistemaActividadHumana> actividadesViables) {
+		ActividadesViables = actividadesViables;
+	}
+
+
+	public List<NodoSaab> getNodosSaab() {
+		return NodosSaab;
+	}
+
+
+	public void setNodosSaab(List<NodoSaab> nodosSaab) {
+		NodosSaab = nodosSaab;
+	}
+
+
+	public List<CentroUrbano> getCentrosUrbanos() {
+		return CentrosUrbanos;
+	}
+
+
+	public void setCentrosUrbanos(List<CentroUrbano> centrosUrbanos) {
+		CentrosUrbanos = centrosUrbanos;
 	}
 	
 	
