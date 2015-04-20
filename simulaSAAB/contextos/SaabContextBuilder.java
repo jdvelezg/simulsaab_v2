@@ -171,6 +171,7 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 			
 			String name				=null;
 			String tipojunction		=null;
+			int pesoJunction		=0;
 			
 			AmbienteLocal region	=null;
 			CentroUrbano pueblo		=null;
@@ -253,12 +254,14 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 								
 				name 			=(String)feature.getAttribute("Name");
 				tipojunction 	=(String)feature.getAttribute("TYPE");
+				pesoJunction	=(Integer)feature.getAttribute("weight");
 				
 				junction = new Junction(name, tipojunction);
+				junction.setWeight(pesoJunction);
 				junction.setGeometria(geom);				
 								
 				context.add(junction);
-				//geography.move(junction, geom);
+				geography.move(junction, geom);
 				
 				break;
 			case "nodos": //Cuando carga Nodos

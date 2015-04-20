@@ -10,12 +10,14 @@ public class Junction {
 	
 	private Geometry Geometria;
 	
+	private Integer Weight; 
+	
 		
 	/**
 	 * Contructor
 	 */
 	public Junction() {
-		// TODO Auto-generated constructor stub
+		this.Weight=0;
 	}
 	
 	/**
@@ -25,7 +27,8 @@ public class Junction {
 	 */
 	public Junction(String nom, String tipo){
 		this.Nombre	= nom;
-		this.Tipo	=tipo;	
+		this.Tipo	= tipo;
+		this.Weight	= 0;
 	}
 	
 	
@@ -54,5 +57,14 @@ public class Junction {
 	public void setGeometria(Geometry geometria) {
 		Geometria = geometria;
 	}
+
+	public Integer getWeight() {
+		return Weight;
+	}
+
+	public void setWeight(Integer weight) {
+		Weight = weight;
+	}
+	
 
 }

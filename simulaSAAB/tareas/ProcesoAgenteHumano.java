@@ -50,7 +50,6 @@ public class ProcesoAgenteHumano implements SistemaActividadHumana<AgenteIntelig
 		}
 		else if(this.Estado.equalsIgnoreCase(EstadosActividad.RUNNING.toString())){
 			
-			List<Producto> opciones = new ArrayList<Producto>();
 			
 			switch(this.paso){
 			case 1:
