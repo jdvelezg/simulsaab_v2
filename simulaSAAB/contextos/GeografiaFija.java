@@ -3,6 +3,7 @@
  */
 package simulaSAAB.contextos;
 
+import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 
 /**
@@ -11,8 +12,8 @@ import com.vividsolutions.jts.geom.Geometry;
  */
 public interface GeografiaFija {
 	
-	public void setGeometria(Geometry geom);
-	
+	public void setGeometria(Geometry geom);	
 	public Geometry getGeometria();
+	
 
 }

@@ -1,10 +1,13 @@
 package simulaSAAB.contextos;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import org.geotools.data.shapefile.ShapefileDataStore;
@@ -26,8 +29,14 @@ import simulaSAAB.agentes.Terreno;
 import simulaSAAB.agentes.Tienda;
 import simulaSAAB.agentes.VendedorFinal;
 import simulaSAAB.comunicacion.Producto;
+import simulaSAAB.contextos.environment.Junction;
+import simulaSAAB.contextos.environment.NetworkEdge;
+import simulaSAAB.contextos.environment.NetworkEdgeCreator;
 import simulaSAAB.global.SimulaSAABLogging;
 import simulaSAAB.global.VariablesGlobales;
+import simulaSAAB.contextos.environment.Junction;
+import simulaSAAB.contextos.exceptions.DuplicateRoadException;
+import simulaSAAB.contextos.exceptions.NoIdentifierException;
 import repast.simphony.context.Context;
 import repast.simphony.context.DefaultContext;
 import repast.simphony.context.space.gis.GeographyFactoryFinder;
@@ -38,6 +47,7 @@ import repast.simphony.parameter.Parameters;
 import repast.simphony.random.RandomHelper;
 import repast.simphony.space.gis.Geography;
 import repast.simphony.space.gis.GeographyParameters;
+import repast.simphony.space.gis.SimpleAdder;
 import repast.simphony.space.graph.DefaultEdgeCreator;
 import repast.simphony.space.graph.Network;
 import repast.simphony.util.collections.IndexedIterable;
@@ -66,8 +76,11 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 	public static Context<Object> OrdenesContext;
 	
 	//Vias Context
-	public static Context<Object> JunctionsContext;
-	public static Network<Object> JunctionsNetwork;
+	public static Context<Object> RoadContext;
+	public static Geography<Object> RoadGeography;
+	
+	public static Context<Junction> JunctionsContext;
+	public static Network<Junction> RoadNetwork;
 	
 	
 	
@@ -111,21 +124,93 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 		
 		OrdenesContext = new DefaultContext(VariablesGlobales.CONTEXTO_ORDENES);
 		SISAABContext.addSubContext(OrdenesContext);
-		
+				
 		//Contextos de rutas
-		JunctionsContext = new RoadContext();
+		RoadContext = new RoadContext();
+		SAABContext.addSubContext(RoadContext);
+		
+		GeographyParameters<Object>	geoRoadparams 	= new GeographyParameters<Object>();		
+		RoadGeography = GeographyFactoryFinder.createGeographyFactory(null).createGeography(VariablesGlobales.GEOGRAFIA_RUTAS, RoadContext, geoRoadparams);
+		
+		cargarShapeFiles(VariablesGlobales.RUTAS_SHAPEFILE,"via",RoadContext,SAABGeography);
+		
+		//Network de conexiones
+		JunctionsContext = new JunctionContext();
 		SAABContext.addSubContext(JunctionsContext);
 		
-		NetworkBuilder<Object> NetJunctionBuilder	=new NetworkBuilder<Object>(VariablesGlobales.NETWORK_RUTAS,JunctionsContext,false);
-		NetJunctionBuilder.setEdgeCreator(new DefaultEdgeCreator<Object>());
-		JunctionsNetwork = NetJunctionBuilder.buildNetwork();
+		NetworkBuilder<Junction> NetJunctionBuilder	=new NetworkBuilder<Junction>(VariablesGlobales.NETWORK_RUTAS,JunctionsContext,false);
+		NetJunctionBuilder.setEdgeCreator(new DefaultEdgeCreator<Junction>());
+		RoadNetwork = NetJunctionBuilder.buildNetwork();
 		
-		cargarShapeFiles(VariablesGlobales.CONEXIONES_SHAPEFILE,"junction",JunctionsContext,SAABGeography);
+		creaRutasNetwork(RoadContext, JunctionsContext, RoadNetwork);		
 		
 		return context;
 		
 	}
 	
+	
+	/**
+	 * Crea el network de rutas usando dos archivos SHP, uno con las vias y otro con los nodos de union entre las vias. 
+	 * 
+	 * @author Nick Malleson. Este algoritmo esta basado en métodos de la clase GISFunctions del proyecto RepastCity3 
+	 */
+	private void creaRutasNetwork(Context<Object> rutasContext, Context<Junction> junctionContext, Network<Junction> roadNetwork){
+		
+		IndexedIterable<Object> rutas =rutasContext.getObjects(ViaTransitable.class);
+		// Create a cache of all Junctions and coordinates so we know if a junction has already been created at a
+		// particular coordinate
+		Map<Coordinate, Junction> coordMap = new HashMap<Coordinate, Junction>();
+		
+		//Por cada viaTransitable se crean las conexiones (junctions) y su respectivo vertice (Edge)
+		for(Object v: rutas){
+			
+			ViaTransitable via 	= (ViaTransitable)v;
+			Geometry viageom	= via.getGeometria();	
+			
+			Coordinate c1 = viageom.getCoordinates()[0];// First coord
+			Coordinate c2 = viageom.getCoordinates()[viageom.getNumPoints()-1];// Last coord
+			
+			// Create Junctions from these coordinates and add them to the JunctionGeography (if they haven't been
+			// created already)
+			Junction junc1, junc2;
+			if (coordMap.containsKey(c1)) {
+				// A Junction with those coordinates (c1) has been created, get it so we can add an edge to it
+				junc1 = coordMap.get(c1);
+			} else { // Junction does not exit
+				junc1 = new Junction();
+				junc1.setCoords(c1);
+				junctionContext.add(junc1);
+				coordMap.put(c1, junc1);
+			}
+			if (coordMap.containsKey(c2)) {
+				junc2 = coordMap.get(c2);
+			} else { // Junction does not exit
+				junc2 = new Junction();
+				junc2.setCoords(c2);
+				junctionContext.add(junc2);
+				coordMap.put(c2, junc2);				
+			}
+			
+			// Tell the road object who it's junctions are
+			via.addJunction(junc1);
+			via.addJunction(junc2);
+			// Tell the junctions about this road
+			junc1.addRoad(via);
+			junc2.addRoad(via);
+			
+			// Create an edge between the two junctions, assigning a weight equal to it's length
+			NetworkEdge<Junction> edge = new NetworkEdge<Junction>(junc1, junc2, false, viageom.getLength()*via.getMultiplicador());
+			
+			// Tell the Road and the Edge about each other
+			via.setEdge(edge);
+			edge.setRoad(via);
+			
+			if (!roadNetwork.containsEdge(edge)) {
+				roadNetwork.addEdge(edge);
+			}
+			
+		}//for each
+	}
 	
 	/**
 	 * Carga las formas geometricas de las proyecciones desde archivos ESRI-Shapefile
@@ -169,15 +254,16 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 			SimpleFeature feature 	= fiter.next();
 			Geometry geom 			= (Geometry)feature.getDefaultGeometry();			
 			
+			String id				=null;
 			String name				=null;
-			String tipojunction		=null;
-			int pesoJunction		=0;
+			String tipo				=null;
+			//int pesoJunction		=0;
 			
 			AmbienteLocal region	=null;
 			CentroUrbano pueblo		=null;
 			NodoSaab nodoSaab		=null;			
 			PlazaDistrital plaza	=null;
-			Junction junction		=null;
+			ViaTransitable via		=null;
 			
 			
 			if (geom instanceof MultiPolygon){
@@ -252,7 +338,7 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 				break;
 			case "junction"://Cuando carga puntos de navegacion				
 								
-				name 			=(String)feature.getAttribute("Name");
+				/*name 			=(String)feature.getAttribute("Name");
 				tipojunction 	=(String)feature.getAttribute("TYPE");
 				pesoJunction	=(Integer)feature.getAttribute("weight");
 				
@@ -261,7 +347,23 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 				junction.setGeometria(geom);				
 								
 				context.add(junction);
-				geography.move(junction, geom);
+				geography.move(junction, geom);*/
+				
+				break;
+			case "via"://Cuando carga rutas, calles y vías		
+												
+				id		=(String)feature.getAttribute("identifier");
+				name 	=(String)feature.getAttribute("name");
+				tipo 	=(String)feature.getAttribute("type");
+				
+				via = new ViaTransitable();
+				via.setIdentificador(id);
+				via.setNombre(name);
+				via.setTipo(tipo);
+				via.setGeografia(geography);
+				
+				context.add(via);
+				geography.move(via, geom);			
 				
 				break;
 			case "nodos": //Cuando carga Nodos

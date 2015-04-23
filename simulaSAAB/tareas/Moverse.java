@@ -27,7 +27,7 @@ import repast.simphony.space.graph.ShortestPath;
 import simulaSAAB.comunicacion.Producto;
 import simulaSAAB.comunicacion.Proposito;
 import simulaSAAB.contextos.GeografiaFija;
-import simulaSAAB.contextos.Junction;
+import simulaSAAB.contextos.environment.Junction;
 import simulaSAAB.contextos.ObjetoMovil;
 import simulaSAAB.contextos.SaabContextBuilder;
 
@@ -41,9 +41,9 @@ public class Moverse implements SistemaActividadHumana<ObjetoMovil> {
 	
 	private Geography<Object> SAABGeography;
 	
-	private Context<Object> JunctionsContext;
+	private Context<Junction> JunctionsContext;
 	
-	private Network<Object> JunctionsNetwork;
+	private Network<Junction> JunctionsNetwork;
 	
 	private List<RepastEdge<Object>> Path;
 	
@@ -65,7 +65,7 @@ public class Moverse implements SistemaActividadHumana<ObjetoMovil> {
 		setProposito();
 		SAABGeography	= SaabContextBuilder.SAABGeography;
 		JunctionsContext= SaabContextBuilder.JunctionsContext;
-		JunctionsNetwork= SaabContextBuilder.JunctionsNetwork;		
+		JunctionsNetwork= SaabContextBuilder.RoadNetwork;		
 	}
 	
 	
@@ -79,7 +79,7 @@ public class Moverse implements SistemaActividadHumana<ObjetoMovil> {
 		Destino			= destino;
 		SAABGeography	= SaabContextBuilder.SAABGeography;
 		JunctionsContext= SaabContextBuilder.JunctionsContext;
-		JunctionsNetwork= SaabContextBuilder.JunctionsNetwork;
+		JunctionsNetwork= SaabContextBuilder.RoadNetwork;
 		
 		Estado	= EstadosActividad.READY.toString();
 	}
@@ -91,7 +91,7 @@ public class Moverse implements SistemaActividadHumana<ObjetoMovil> {
 		this.Forward	= forward;
 		SAABGeography	= SaabContextBuilder.SAABGeography;
 		JunctionsContext= SaabContextBuilder.JunctionsContext;
-		JunctionsNetwork= SaabContextBuilder.JunctionsNetwork;
+		JunctionsNetwork= SaabContextBuilder.RoadNetwork;
 		
 		Estado	= EstadosActividad.READY.toString();
 	}
@@ -188,13 +188,13 @@ public class Moverse implements SistemaActividadHumana<ObjetoMovil> {
 		
 		ShortestPath helper 	= new ShortestPath(JunctionsNetwork);
 		
-		Junction source = new Junction("origen","temporal");
-		Junction target = new Junction("destino","temporal");
+		//Junction source = new Junction("origen","temporal");
+		//Junction target = new Junction("destino","temporal");
 		
-		this.JunctionsContext.add(source);
-		this.JunctionsContext.add(target);
+		//this.JunctionsContext.add(source);
+		//this.JunctionsContext.add(target);
 		
-		this.Path = helper.getPath(source, target);		
+		//this.Path = helper.getPath(source, target);		
 	}
 	
 	
