@@ -8,6 +8,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.geotools.data.shapefile.ShapefileDataStore;
@@ -34,6 +35,7 @@ import simulaSAAB.contextos.environment.NetworkEdge;
 import simulaSAAB.contextos.environment.NetworkEdgeCreator;
 import simulaSAAB.global.SimulaSAABLogging;
 import simulaSAAB.global.VariablesGlobales;
+import simulaSAAB.tareas.ProducirCebollaBulbo;
 import simulaSAAB.contextos.environment.Junction;
 import simulaSAAB.contextos.exceptions.DuplicateRoadException;
 import simulaSAAB.contextos.exceptions.NoIdentifierException;
@@ -104,12 +106,17 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 		SAABContext.addSubContext(RuralContext);
 		
 		cargarShapeFiles(VariablesGlobales.MUNICIPIOS_SHAPEFILE,"municipios",RuralContext,SAABGeography);
+		cargarShapeFiles(VariablesGlobales.CENTROSURBANOS_SHAPEFILE,"urbano",RuralContext,SAABGeography);
 		
 		//Contexto Distrital
 		BogotaContext =new BogotaContext();
 		SAABContext.addSubContext(BogotaContext);
 		
-		cargarShapeFiles(VariablesGlobales.BOGOTA_SHAPEFILE,"urbano",BogotaContext,SAABGeography);
+		cargarShapeFiles(VariablesGlobales.PLAZASDISTRITALES_SHAPEFILE,"plazas",BogotaContext,SAABGeography);
+		cargarShapeFiles(VariablesGlobales.PLAZASVORNOI_SHAPEFILE,"area_plaza",BogotaContext,SAABGeography);
+		cargarShapeFiles(VariablesGlobales.NODOSSAAB_SHAPEFILE,"nodos",BogotaContext,SAABGeography);
+				
+		//cargarShapeFiles(VariablesGlobales.BOGOTA_SHAPEFILE,"urbano",BogotaContext,SAABGeography);
 		
 		//Contextos SISaab
 		SISAABContext = new SISaabContext();
@@ -132,7 +139,7 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 		GeographyParameters<Object>	geoRoadparams 	= new GeographyParameters<Object>();		
 		RoadGeography = GeographyFactoryFinder.createGeographyFactory(null).createGeography(VariablesGlobales.GEOGRAFIA_RUTAS, RoadContext, geoRoadparams);
 		
-		cargarShapeFiles(VariablesGlobales.RUTAS_SHAPEFILE,"via",RoadContext,SAABGeography);
+		//cargarShapeFiles(VariablesGlobales.RUTAS_SHAPEFILE,"via",RoadContext,SAABGeography);
 		
 		//Network de conexiones
 		JunctionsContext = new JunctionContext();
@@ -142,7 +149,7 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 		NetJunctionBuilder.setEdgeCreator(new DefaultEdgeCreator<Junction>());
 		RoadNetwork = NetJunctionBuilder.buildNetwork();
 		
-		creaRutasNetwork(RoadContext, JunctionsContext, RoadNetwork);		
+		//creaRutasNetwork(RoadContext, JunctionsContext, RoadNetwork);		
 		
 		return context;
 		
@@ -151,8 +158,9 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 	
 	/**
 	 * Crea el network de rutas usando dos archivos SHP, uno con las vias y otro con los nodos de union entre las vias. 
-	 * 
-	 * @author Nick Malleson. Este algoritmo esta basado en métodos de la clase GISFunctions del proyecto RepastCity3 
+	 * Este algoritmo esta basado en métodos de la clase GISFunctions del proyecto RepastCity3.
+	 * @author Nick Malleson. 
+	 *  
 	 */
 	private void creaRutasNetwork(Context<Object> rutasContext, Context<Junction> junctionContext, Network<Junction> roadNetwork){
 		
@@ -210,6 +218,8 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 			}
 			
 		}//for each
+		
+		coordMap.clear();//Try to avoid memory overpassed
 	}
 	
 	/**
@@ -296,10 +306,10 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 				region.addProductoAgricolaViable(new Producto("Cebolla"));
 				
 				if(!name.equalsIgnoreCase("bogota")){
-					//region.addActividadViable(new ProducirCebollaBulbo());
-					//region.addActividadViable(new ProducirCebolla());
-					crearProductores(region,numeroProductores,geography,context);
-				}		
+					region.addActividadViable(new ProducirCebollaBulbo());
+				}
+				
+				LOGGER.log(Level.INFO, this.toString() + " Agregado municipio: "+name);
 				
 				break;
 			case "urbano"://Cuando carga Centros urbanos					
@@ -308,35 +318,48 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 				pueblo 	= new CentroUrbano(name);
 				pueblo.setGeometria(geom);
 				
-				context.add(pueblo);
-				geography.move(pueblo, geom);
-				
-				
-				//pueblo.addProductoAgricolaViable(new Producto("Cebolla"));
+				context.add(pueblo);			
+				pueblo.addProductoAgricolaViable(new Producto("Cebolla"));
 				//pueblo.addActividadViable(new VenderCebollaBulbo());
 				//pueblo.addActividadViable(new VenderProductosEnBogota());				
 				
-				if(name.equalsIgnoreCase("Bogota")){
-					//crearTenderos(pueblo,numeroVendedoresFinales,geography,context);
-					//pueblo.addActividadViable(new ComprarProductos());
-				}
-				
-				/*
-				//Agrega el centro urbano al ambiente-municipio que lo intercepta
-				IndexedIterable ambientes 	= RuralContext.getObjects(AmbienteLocal.class);
-				Iterator iter 				= ambientes.iterator();
-				while(iter.hasNext()){
-					AmbienteLocal municipio = (AmbienteLocal)iter.next();
-					if(municipio.getGeometria().intersects(pueblo.getGeometria())){
-						municipio.addCentroUrbano(pueblo);
-						//System.out.println("Agrega Urbe:"+pueblo.getNombre()+" a municipio:"+municipio.getNombre());
-					}else{
-						//System.out.println("urbe "+pueblo.getNombre()+" no queda en municipio:"+municipio.getNombre());
-					}						
-				}	*/
+				if(!name.equalsIgnoreCase("Bogota")){
+					
+					/**
+					 * Cuando el centro urbano hace referencia a Bogota, no es agregado al mapa
+					 * por estetica 
+					 */
+					geography.move(pueblo, geom);
+					
+					/**Agrega el centro urbano al ambiente-municipio que lo intercepta
+					 * Es necesario que el shpFile de municipios haya sido cargado con anteriorridad
+					 */
+					IndexedIterable ambientes 	= context.getObjects(AmbienteLocal.class);
+					Iterator iter 				= ambientes.iterator();
+					
+					while(iter.hasNext()){
+						
+						Object mun = iter.next();
+						if(!(mun instanceof CentroUrbano)){							
+							
+							AmbienteLocal municipio = (AmbienteLocal)mun;
+							if(municipio.getGeometria().intersects(geom)){
+								
+								LOGGER.log(Level.INFO, this.toString() + "Agrega Urbe:"+pueblo.getNombre()+" a municipio:"+municipio.getNombre());
+								/**
+								 * Agerga productores al municipio, enlazando sus centros urbanos como puntos de oferta
+								 */
+								municipio.addCentroUrbano(pueblo);
+								crearProductores(municipio, pueblo,numeroProductores,geography,context);
+								
+							}
+						}
+					}//End While
+					
+				}//end if			
 				
 				break;
-			case "junction"://Cuando carga puntos de navegacion				
+			case "junction"://Cuando carga puntos de navegacion desde un shapefile		
 								
 				/*name 			=(String)feature.getAttribute("Name");
 				tipojunction 	=(String)feature.getAttribute("TYPE");
@@ -366,7 +389,7 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 				geography.move(via, geom);			
 				
 				break;
-			case "nodos": //Cuando carga Nodos
+			case "nodos": //Cuando carga Nodos SAAB
 				
 				name =(String)feature.getAttribute("Name"); 
 				nodoSaab = new NodoSaab(name);
@@ -375,8 +398,10 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 				context.add(nodoSaab);
 				geography.move(nodoSaab, geom);
 				
+				LOGGER.log(Level.INFO, this.toString() + "Agrega Nodo:"+nodoSaab.getNombre());
+				
 				break;
-			case "plazas"://cuando carga Plazas
+			case "plazas"://cuando carga Plazas Distritales
 				
 				name 	=(String)feature.getAttribute("Name");
 				plaza 	=new PlazaDistrital(name);
@@ -384,9 +409,34 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 				plaza.setGeometria(geom);
 				
 				context.add(plaza);
-				geography.move(plaza, geom);
+				geography.move(plaza, geom);			
 				
-				break;			
+				break;
+			case "area_plaza"://cuando carga diagrama vornoi de Plazas Distritales
+				
+				name 	=(String)feature.getAttribute("Name");
+				region 	= new AmbienteLocal(name);
+				region.setGeometria(geom);
+				
+				/**
+				 * Agrega tenderos dentro del area de correspondencia de cada plaza distrital
+				 * Es necesario que las geometrias de Plazas Distritales haya sido cargadas
+				 * con anterioridad.
+				 */
+				IndexedIterable<Object> plazas = context.getObjects(PlazaDistrital.class);
+				for(int j=0; j<plazas.size(); j++){
+					
+					PlazaDistrital pl = (PlazaDistrital)plazas.get(j);
+					if(pl.getNombre().equalsIgnoreCase(name)){
+						/**
+						 * Crea agentes "vendedores finales" por cada plaza distrital para dejarla enlazada como punto de demanda
+						 */
+						crearTenderos(region,pl,numeroVendedoresFinales,geography,context);
+						break;
+					}
+				}				
+				
+				break;
 			}			
 		}
 		
@@ -407,7 +457,7 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 	 * @param cantidad Numero de agentes a agregar
 	 * @param geography Geografia a la que se agregan los agentes
 	 */
-	private void crearProductores(GeografiaFija amb, int cantidad, Geography<Object> geography, Context<Object> contexto){	
+	private void crearProductores(GeografiaFija amb, CentroUrbano puntoOferta, int cantidad, Geography<Object> geography, Context<Object> contexto){	
 				
 		/**
 		 * Obtiene el centroide de la region y las coordenadas de los vertices del ambiente, 
@@ -427,7 +477,7 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 			Coordinate AgentCoord 	= new Coordinate(RandomHelper.nextDoubleFromTo(center.x,coords[RandomHelper.nextIntFromTo(0, coords.length-1)].x),RandomHelper.nextDoubleFromTo(center.y,coords[RandomHelper.nextIntFromTo(0, coords.length-1)].y));//center;			
 			Point geom 				= geofact.createPoint(AgentCoord);
 			
-			if(amb.getGeometria().intersects(geom.getGeometryN(0))){
+			if(amb.getGeometria().intersects(geom.getGeometryN(0))){//Si esta dentro de la geometria del ambiente
 				
 				Coordinate TerrCoord 	= new Coordinate(RandomHelper.nextDoubleFromTo(center.x,coords[RandomHelper.nextIntFromTo(0, coords.length-1)].x),RandomHelper.nextDoubleFromTo(center.y,coords[RandomHelper.nextIntFromTo(0, coords.length-1)].y));//center;
 				Point terrenogeom 		= geofact.createPoint(TerrCoord);
@@ -439,17 +489,11 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 				
 				geography.move(productor, geom);
 				geography.move(terreno, terreno.getGeometria());			
-				
-				//productor.setGis(geography);
-				//productor.setGeometria(geom);
+								
 				productor.addTerrenos(terreno);
+				productor.setPuntoOferta(puntoOferta);
 				
-				terreno.setAmbiente((AmbienteLocal)amb);
-				
-				/*System.out.println("Productor inside");
-				if(geom.equals(terrenogeom))
-					System.out.println("terreno equal");*/
-				
+				terreno.setAmbiente((AmbienteLocal)amb);			
 			}
 			
 		}
@@ -465,7 +509,7 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 	 * @param geography
 	 * @param contexto
 	 */
-	private void crearTenderos(GeografiaFija amb, int cantidad, Geography<Object> geography, Context<Object> contexto){
+	private void crearTenderos(AmbienteLocal amb, PlazaDistrital plaza, int cantidad, Geography<Object> geography, Context<Object> contexto){
 		
 			
 		
@@ -475,7 +519,7 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 		 * vertices del ambiente.
 		 */
 		Coordinate[] coords = amb.getGeometria().getCoordinates();		
-		Coordinate center 	= amb.getGeometria().getCentroid().getCoordinate();
+		Coordinate center 	= amb.getGeometria().getCentroid().getCoordinate();		
 		
 		for(int i=0; i<cantidad; i++){
 			
@@ -489,13 +533,17 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 				
 				Point tiendageom 		= geofact.createPoint(AgentCoord);
 				Tienda tienda			= new Tienda(tiendageom);
-								
+				
+				agente.addTienda(tienda);
+				agente.setPuntoDemanda(plaza);
+				
 				contexto.add(agente);
 				contexto.add(tienda);
 				
 				geography.move(agente, geom);
 				geography.move(tienda, tiendageom);			
 				
+				LOGGER.log(Level.INFO, this.toString() + "Vendedor inside ");
 			}					
 			
 		}		

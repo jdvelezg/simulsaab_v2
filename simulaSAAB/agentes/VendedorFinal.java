@@ -13,6 +13,7 @@ import simulaSAAB.comunicacion.Experiencia;
 import simulaSAAB.comunicacion.Oferta;
 import simulaSAAB.comunicacion.Producto;
 import simulaSAAB.comunicacion.Proposito;
+import simulaSAAB.contextos.PlazaDistrital;
 import simulaSAAB.global.PropositosFactory;
 import simulaSAAB.inteligencia.Cerebro;
 import simulaSAAB.tareas.ProcesoAgenteHumano;
@@ -43,6 +44,8 @@ public class VendedorFinal implements AgenteInteligente, Demandante {
 	private List<Experiencia> Experiencia;
 	
 	private List<Tienda> Tiendas;
+	
+	private PlazaDistrital puntoDemanda;
 	
 	private List<Demanda> Demandas;
 	
@@ -142,9 +145,10 @@ public class VendedorFinal implements AgenteInteligente, Demandante {
 	
 	
 	@Override
-	public void generarDemanda() {
+	public Demanda generarDemanda() {
 		// TODO Auto-generated method stub
 		
+		return null;
 	}
 
 	@Override
@@ -204,6 +208,47 @@ public class VendedorFinal implements AgenteInteligente, Demandante {
 		// TODO Auto-generated method stub
 		if(exp!=null)
 			this.Experiencia.add(exp);
+	}
+
+
+	@Override
+	public void setEstado(String Estado) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
+	public simulaSAAB.comunicacion.Dinero getDinero() {
+		return Dinero;
+	}
+
+
+	public void setDinero(simulaSAAB.comunicacion.Dinero dinero) {
+		Dinero = dinero;
+	}
+
+
+	public List<Tienda> getTiendas() {
+		return Tiendas;
+	}
+
+
+	public void addTienda(Tienda tienda) {
+		
+		if(Tiendas == null)
+			Tiendas = new ArrayList();
+		
+		Tiendas.add(tienda);
+	}
+
+
+	public PlazaDistrital getPuntoDemanda() {
+		return puntoDemanda;
+	}
+
+
+	public void setPuntoDemanda(PlazaDistrital puntoDemanda) {
+		this.puntoDemanda = puntoDemanda;
 	}
 
 	

@@ -12,8 +12,6 @@ public class OrdenDeCompra implements Concepto {
 	
 	private Dinero PagoAcordado;
 	
-	private List<Object> OrdenesDeServicio;
-	
 	/**
 	 * Constructor
 	 */

@@ -6,6 +6,8 @@ public class Recurso implements Concepto {
 	
 	private Double Cantidad;
 	
+	private Double costoUnitario;
+	
 	
 	/**
 	 * Constructor
@@ -61,5 +63,15 @@ public class Recurso implements Concepto {
 	public void setCantidad(Double cantidad) {
 		Cantidad = cantidad;
 	}
+
+	public Double getCostoUnitario() {
+		return costoUnitario;
+	}
+
+	public void setCostoUnitario(Double costoUnitario) {
+		this.costoUnitario = costoUnitario;
+	}
+	
+	
 
 }

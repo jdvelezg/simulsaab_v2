@@ -76,6 +76,12 @@ public class ProcesoAgenteHumano implements SistemaActividadHumana<AgenteIntelig
 				
 				paso++;
 				break;
+			case 4: 				
+				//LOGGER.log(Level.INFO, this.toString() + " Paso 3. Actor: " + actor.toString());				
+				this.Estado =EstadosActividad.DONE.toString();
+				
+				paso++;
+				break;
 			default:
 				//LOGGER.log(Level.INFO, "TERMINA PROCESO"+actor.toString());
 				this.Estado =EstadosActividad.READY.toString();

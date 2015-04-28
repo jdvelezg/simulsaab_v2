@@ -13,6 +13,8 @@ public class OrdenDePedido implements Concepto {
 	private Geometry PuntoGenerador;
 	
 	private List<Object> OrdenesDeCompra;
+	
+	private List<Object> OrdenesDeServicio;
 
 	public OrdenDePedido() {
 		// TODO Auto-generated constructor stub

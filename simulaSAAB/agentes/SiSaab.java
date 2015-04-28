@@ -1,29 +1,34 @@
 package simulaSAAB.agentes;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
+
+import bsh.This;
 import repast.simphony.context.Context;
 import repast.simphony.space.graph.Network;
+import repast.simphony.util.collections.IndexedIterable;
 import simulaSAAB.comunicacion.Demanda;
 import simulaSAAB.comunicacion.Oferta;
+import simulaSAAB.comunicacion.Producto;
+import simulaSAAB.contextos.SaabContextBuilder;
 
-public class SiSaab implements AgenteReactivo {
-	
-	private Context<Object> SISAABContext;
-	
-	public static Network<Object> SISAABNetwork;
-	
-	public static Context<Object> ComercialContext;
-	
-	public static Network<Object> ComercialNetwork;
-	
-	public static Context<Object> OrdenesContext;
-	
+public abstract class SiSaab implements AgenteReactivo {
 	
 	/**
-	 * Constructor
+	 * Referencia interna a los contextos propios del SISAAB
 	 */
-	public SiSaab() {
-		// TODO Auto-generated constructor stub
-	}
+	private static final Context<Object> SISAABContext 		= SaabContextBuilder.SISAABContext;
+	
+	private static final Network<Object> SISAABNetwork 		= SaabContextBuilder.SISAABNetwork;
+	
+	private static final Context<Object> ComercialContext 	= SaabContextBuilder.ComercialContext;
+	
+	private static final Network<Object> ComercialNetwork 	= SaabContextBuilder.ComercialNetwork;
+	
+	private static final Context<Object> OrdenesContext		= SaabContextBuilder.OrdenesContext;
 	
 	
 	/**
@@ -33,7 +38,7 @@ public class SiSaab implements AgenteReactivo {
 	 * @param oferta Objeto Oferta relacionado en la orden de pedido
 	 * @param demanda Objeto de demanda relacionado en la orden de pedido
 	 */
-	private void generarOrdenDePedido(Oferta oferta, Demanda demanda){
+	private static void generarOrdenDePedido(Oferta oferta, Demanda demanda){
 		
 	}
 	
@@ -43,7 +48,7 @@ public class SiSaab implements AgenteReactivo {
 	 * @param oferta Objeto Oferta relacionado al servicio logistico
 	 * @param demanda Objeto de demanda relacionado al servicio logistico
 	 */
-	private void generarOrdenDeServicioLogistico(Oferta oferta, Demanda demanda){
+	private static void generarOrdenDeServicioLogistico(Oferta oferta, Demanda demanda){
 		
 	}
 	
@@ -53,7 +58,7 @@ public class SiSaab implements AgenteReactivo {
 	 * @param oferta Objeto oferta ligado a la orden de compra
 	 * @param demanda Objeto demanda ligado a la orden de compra
 	 */
-	private void generarOrdenDeCompra(Oferta oferta, Demanda demanda){
+	private static void generarOrdenDeCompra(Oferta oferta, Demanda demanda){
 		
 	}
 	
@@ -61,16 +66,43 @@ public class SiSaab implements AgenteReactivo {
 	 * Registra una oferta en el sistema para ser tomada en cuenta en las transacciones de comercialziación.
 	 * @param oferta Oferta a registrar
 	 */
-	public void registrarOferta(Oferta oferta){
+	public synchronized static void registrarOferta(Oferta oferta){
 		
+		ComercialContext.add(oferta);
+		oferta.setVigente();
 	}
 	
 	/**
-	 * Reigstra una demanda en el sistema para ser toamda en cuenta en las transacciones de comercialziación. 
+	 * Registra una demanda en el sistema para ser toamda en cuenta en las transacciones de comercialziación. 
 	 * @param demanda
 	 */
-	public void registrarDemanda(Demanda demanda){
+	public synchronized static void registrarDemanda(Demanda demanda){
 		
+		ComercialContext.add(demanda);
+		demanda.setVigente();
+	}
+	
+	/**
+	 * Devuelve las ofertas registradas para el producto pasado como parametro
+	 * @param producto
+	 * @return List<Ofertas>
+	 */
+	public synchronized static List<Oferta> ofertasRegistradas(String producto){
+		
+		//Obtiene ofertas registradas
+		List<Oferta> ofertas 			= new ArrayList<Oferta>();				
+		IndexedIterable<Object> offers 	= ComercialContext.getObjects(Oferta.class);
+		
+		//filtra ofertas de interés para la demanda
+		for(int i=0; i<offers.size();i++){
+			
+			Oferta o = (Oferta)offers.get(i);
+			
+			if(o.getProducto().equals(producto))
+				ofertas.add(o);
+		}//end for
+		
+		return ofertas;
 	}
 	
 	/**
@@ -78,60 +110,49 @@ public class SiSaab implements AgenteReactivo {
 	 * @param offer Oferta relacinada en la compra
 	 * @param demand Demanda relacionada en la compra
 	 */
-	public void RealizarCompra(Oferta offer, Demanda demand){
+	public synchronized static void realizarCompra(List<Oferta> offer, Demanda demanda){
 		
-	}
-
-
-	public Context<Object> getSISAABContext() {
-		return SISAABContext;
-	}
-
-
-	public void setSISAABContext(Context<Object> sISAABContext) {
-		SISAABContext = sISAABContext;
-	}
-
-
-	public static Network<Object> getSISAABNetwork() {
-		return SISAABNetwork;
-	}
-
-
-	public static void setSISAABNetwork(Network<Object> sISAABNetwork) {
-		SISAABNetwork = sISAABNetwork;
-	}
-
-
-	public static Context<Object> getComercialContext() {
-		return ComercialContext;
-	}
-
-
-	public static void setComercialContext(Context<Object> comercialContext) {
-		ComercialContext = comercialContext;
-	}
-
-
-	public static Network<Object> getComercialNetwork() {
-		return ComercialNetwork;
-	}
-
-
-	public static void setComercialNetwork(Network<Object> comercialNetwork) {
-		ComercialNetwork = comercialNetwork;
-	}
-
-
-	public static Context<Object> getOrdenesContext() {
-		return OrdenesContext;
-	}
-
-
-	public static void setOrdenesContext(Context<Object> ordenesContext) {
-		OrdenesContext = ordenesContext;
-	}
+		//confirma la oferta como vendida.
+		
+		//la extrae del contexto comercial y la registra en el contexto de transacciones.
+		
+		//genera una orden de compra por cada oferta		
+		
+		for(Oferta of: offer){
+			
+			generarOrdenDeCompra(of,demanda);
+			of.vendida();
+								
+				
+		}//end for	
+		
+		//Agrupa por punto de Oferta
+		
+		//Genera Orden de servicio logistico por punto de Oferta
+		generarOrdenDeServicioLogistico(CentroUrbano puntoOferta, PlazaDistrital puntoDemanda);
+		
+		//Genera Orden de pedido Unitaria
+		generarOrdenDePedido(List<OrdenDeCompra> ordenesCompra, List<OrdenDeServicio> ordenesServicio);
+	}	
 	
 	
 
+}
+
+
+/**
+ * Esta clase permite la comparación de dos objetos Oferta para su organización de una lista mediante la clase abstracta Collection
+ * @author dampher
+ *
+ */
+class OfertaPrecioComparator implements Comparator<Oferta>{
+
+	@Override
+	public int compare(Oferta arg0, Oferta arg1) {
+		// TODO Auto-generated method stub
+		return Double.compare(arg0.getPrecio(), arg1.getPrecio());		
+	}
+
+	
+	
 }

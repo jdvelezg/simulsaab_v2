@@ -73,4 +73,22 @@ public class Terreno implements GeografiaFija {
 		
 	}
 
+	public double getHecatreas() {
+		return Hecatreas;
+	}
+
+	public void setHecatreas(double hecatreas) {
+		Hecatreas = hecatreas;
+	}
+
+	public String getEstado() {
+		return Estado;
+	}
+
+	public void setEstado(String estado) {
+		Estado = estado;
+	}
+	
+	
+
 }

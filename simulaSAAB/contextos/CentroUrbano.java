@@ -30,8 +30,19 @@ public class CentroUrbano extends AmbienteLocal {
 		this.Nombre=nombre;
 	}
 	
+	@Override
 	public void setGeometria(Geometry g){
 		this.Geometria=g;
+	}
+	
+	@Override
+	public Geometry getGeometria(){
+		
+		return this.Geometria;
+	}
+	@Override
+	public String getNombre(){
+		return this.Nombre;
 	}
 
 }

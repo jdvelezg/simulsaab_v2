@@ -1,10 +1,12 @@
 package simulaSAAB.agentes;
 
-public interface Oferente {
+import simulaSAAB.comunicacion.Oferta;
+
+public interface Oferente extends AgenteInteligente{
 	
 	/**
-	 * Registra la oferta d eun producto en el SAAB
+	 * Genera la oferta de un producto
 	 */
-	public void generarOferta();
+	Oferta generarOferta();
 
 }

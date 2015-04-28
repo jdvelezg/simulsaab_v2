@@ -1,5 +1,7 @@
 package simulaSAAB.agentes;
 
+import simulaSAAB.comunicacion.Demanda;
+
 public class OperadorRedDemanda implements Demandante {
 
 	public OperadorRedDemanda() {
@@ -7,9 +9,9 @@ public class OperadorRedDemanda implements Demandante {
 	}
 
 	@Override
-	public void generarDemanda() {
+	public Demanda generarDemanda() {
 		// TODO Auto-generated method stub
-
+		return null;
 	}
 
 	@Override

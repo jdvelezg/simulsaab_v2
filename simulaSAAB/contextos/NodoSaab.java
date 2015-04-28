@@ -45,5 +45,21 @@ public class NodoSaab {
 	public void setGeometria(Geometry g){
 		this.geometria=g;
 	}
+	
+	public Geometry getGeometria() {
+		return geometria;
+	}
+
+	public String getNombre() {
+		return Nombre;
+	}
+
+	public void setNombre(String nombre) {
+		Nombre = nombre;
+	}
+
+	
+	
+	
 
 }

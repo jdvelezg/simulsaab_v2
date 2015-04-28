@@ -12,6 +12,8 @@ import simulaSAAB.comunicacion.Producto;
 import simulaSAAB.comunicacion.Proposito;
 import simulaSAAB.comunicacion.Experiencia;
 import simulaSAAB.comunicacion.Dinero;
+import simulaSAAB.comunicacion.Recurso;
+import simulaSAAB.contextos.CentroUrbano;
 import simulaSAAB.global.PropositosFactory;
 import simulaSAAB.inteligencia.Cerebro;
 import simulaSAAB.tareas.ProcesoAgenteHumano;
@@ -43,9 +45,11 @@ public class Productor implements AgenteInteligente, Oferente {
 	
 	private List<Terreno> TerrenosCultivables;
 	
+	private CentroUrbano puntoOferta;
+	
 	private List<Oferta> Ofertas;
 	
-	private List<Producto> Productos;
+	private List<Recurso> Productos;
 	
 	private List<Producto> ProductosViablesPercibidos;
 	
@@ -65,7 +69,7 @@ public class Productor implements AgenteInteligente, Oferente {
 		Experiencia 		= new ArrayList<Experiencia>();		
 		TerrenosCultivables = new ArrayList<Terreno>();		
 		Ofertas 			= new ArrayList<Oferta>();		
-		Productos 			= new ArrayList<Producto>();
+		Productos 			= new ArrayList<Recurso>();
 		
 		ProductosViablesPercibidos 	= new ArrayList<Producto>();		
 		ActividadesEjecutables 		= new ArrayList<SistemaActividadHumana>();		
@@ -103,7 +107,11 @@ public class Productor implements AgenteInteligente, Oferente {
 			
 			List<SistemaActividadHumana> actividadesAmbientales = finca.getAmbiente().getActividadesViables();
 			
-			//Filtra su proposito
+			//En caso que no tenga aun un proposito vigente, lo asigna.
+			if(this.PropositoVigente==null)
+				formarIntenciones();
+			
+			//Filtra según su proposito
 			for(SistemaActividadHumana a: actividadesAmbientales){
 				
 				if(a.getProposito().compare(PropositoVigente))
@@ -150,9 +158,24 @@ public class Productor implements AgenteInteligente, Oferente {
 	}
 	
 	@Override
-	public void generarOferta() {
-		// TODO Auto-generated method stub
+	public Oferta generarOferta() {
+		/**
+		 * Obtiene el primer producto de la lista y genera una oferta a partir del mismo.
+		 * 
+		 * Fija el precio unitario sumando 10% al costo
+		 * 
+		 * TODO Implementar una forma que el agente decida su ganancia al evaluar variables del mercado
+		 */
+		Recurso producto = this.Productos.get(0);		
+		double precio = producto.getCostoUnitario() + producto.getCostoUnitario()*0.1;
 		
+		Oferta novaOferta = new Oferta(producto,192,true,precio*producto.getCantidad());
+		novaOferta.setPuntoOferta(puntoOferta);
+		
+		this.Ofertas.add(novaOferta);
+		this.Productos.remove(producto);
+		
+		return novaOferta;
 	}
 	
 	/**getter - setters **/
@@ -161,6 +184,11 @@ public class Productor implements AgenteInteligente, Oferente {
 	public String getEstado() {
 		// TODO Auto-generated method stub
 		return this.Estado;
+	}
+	
+	@Override
+	public void setEstado(String Estado){
+		this.Estado = Estado;
 	}
 	
 	/**
@@ -229,6 +257,59 @@ public class Productor implements AgenteInteligente, Oferente {
 			List<SistemaActividadHumana> actividadesEjecutables) {
 		ActividadesEjecutables = actividadesEjecutables;
 	}
+
+
+	public Dinero getDinero() {
+		return Dinero;
+	}
+
+
+	public void setDinero(Dinero dinero) {
+		Dinero = dinero;
+	}
+
+
+	public List<Terreno> getTerrenosCultivables() {
+		return TerrenosCultivables;
+	}
+
+
+	public void setTerrenosCultivables(List<Terreno> terrenosCultivables) {
+		TerrenosCultivables = terrenosCultivables;
+	}
+
+	public void addProducto(Recurso productos){
+		if(this.Productos!=null)
+			this.Productos.add(productos);
+	}
+	
+	public List<Recurso> getProductos(){
+		
+		return Productos;
+	}
+
+
+	public Proposito getPropositoVigente() {
+		return PropositoVigente;
+	}
+
+
+	public void setPropositoVigente(Proposito propositoVigente) {
+		PropositoVigente = propositoVigente;
+	}
+
+
+	public CentroUrbano getPuntoOferta() {
+		return puntoOferta;
+	}
+
+
+	public void setPuntoOferta(CentroUrbano puntoOferta) {
+		this.puntoOferta = puntoOferta;
+	}
+	
+	
+	
 
 
 	

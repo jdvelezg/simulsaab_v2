@@ -10,6 +10,7 @@ public abstract class VariablesGlobales {
 	public static final String CENTROSURBANOS_SHAPEFILE		="data/centros_urbanos.shp";
 	public static final String NODOSSAAB_SHAPEFILE			="data/nodos_saab.shp";
 	public static final String PLAZASDISTRITALES_SHAPEFILE	="data/plazas_distritales.shp";	
+	public static final String PLAZASVORNOI_SHAPEFILE		="data/area_plazasdistritales.shp";
 	public static final String RUTAS_SHAPEFILE				="data/rutas_anillo.shp";
 	public static final String CONEXIONES_SHAPEFILE			="data/junctions.shp";
 	
