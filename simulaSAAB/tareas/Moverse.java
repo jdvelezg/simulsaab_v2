@@ -28,6 +28,7 @@ import simulaSAAB.comunicacion.Producto;
 import simulaSAAB.comunicacion.Proposito;
 import simulaSAAB.contextos.GeografiaFija;
 import simulaSAAB.contextos.environment.Junction;
+import simulaSAAB.contextos.environment.Route;
 import simulaSAAB.contextos.ObjetoMovil;
 import simulaSAAB.contextos.SaabContextBuilder;
 
@@ -45,17 +46,13 @@ public class Moverse implements SistemaActividadHumana<ObjetoMovil> {
 	
 	private Network<Junction> JunctionsNetwork;
 	
-	private List<RepastEdge<Object>> Path;
-	
-	private boolean Forward;
-	
-	private Geometry Destino;
+	private Coordinate destino;
 	
 	private String Estado;
 	
 	private int paso;
 	
-	private int Costo;
+	private Double Costo = new Double(0);
 	
 	/**
 	 * Constructor
@@ -65,7 +62,8 @@ public class Moverse implements SistemaActividadHumana<ObjetoMovil> {
 		setProposito();
 		SAABGeography	= SaabContextBuilder.SAABGeography;
 		JunctionsContext= SaabContextBuilder.JunctionsContext;
-		JunctionsNetwork= SaabContextBuilder.RoadNetwork;		
+		JunctionsNetwork= SaabContextBuilder.RoadNetwork;
+		
 	}
 	
 	
@@ -73,22 +71,10 @@ public class Moverse implements SistemaActividadHumana<ObjetoMovil> {
 	 * Constructor
 	 * @param destino Punto destino del movimiento
 	 */
-	public Moverse(Geometry destino){
+	public Moverse(Coordinate destino){
 		
 		setProposito();		
-		Destino			= destino;
-		SAABGeography	= SaabContextBuilder.SAABGeography;
-		JunctionsContext= SaabContextBuilder.JunctionsContext;
-		JunctionsNetwork= SaabContextBuilder.RoadNetwork;
-		
-		Estado	= EstadosActividad.READY.toString();
-	}
-	
-	public Moverse(List<RepastEdge<Object>> path, boolean forward){
-		
-		setProposito();		
-		this.Path		= path;
-		this.Forward	= forward;
+		this.destino	= destino;
 		SAABGeography	= SaabContextBuilder.SAABGeography;
 		JunctionsContext= SaabContextBuilder.JunctionsContext;
 		JunctionsNetwork= SaabContextBuilder.RoadNetwork;
@@ -107,39 +93,9 @@ public class Moverse implements SistemaActividadHumana<ObjetoMovil> {
 			this.paso	=1;
 			//LOGGER.log(Level.INFO, this.toString() + " Esta listo para iniciar. Actor: " + actor.toString());
 		}
-		else if(this.Estado.equalsIgnoreCase(EstadosActividad.RUNNING.toString())){			
+		else if(this.Estado.equalsIgnoreCase(EstadosActividad.RUNNING.toString())){		
 			
-			/**
-			 * Mediante el switch se controla la ejecución parcial del MPA.
-			 * Por motivos de visualización se puede querer que una actividad sea ejecutada
-			 * en diferentes ciclos de tiempo. Cada case controla los pasos que quieren ser
-			 * desplegados en cada uno, hasta llegar al final.
-			 */
-			switch(this.paso){
-			case 1:
-				
-								
-				
-			
-				
-				paso ++;
-				break;
-			case 2:				
-				
-				
-				
-				paso ++;
-				break;
-			case 3: 				
-				
-				
-				paso++;
-				break;
-			default:
-				
-				
-			}
-			
+			moveSteps(destino,actor);			
 				
 		}
 		
@@ -148,7 +104,7 @@ public class Moverse implements SistemaActividadHumana<ObjetoMovil> {
 	@Override
 	public SistemaActividadHumana getInstance() {
 		// TODO Auto-generated method stub
-		return new Moverse(this.Destino);
+		return new Moverse(this.destino);
 	}
 	
 	/**
@@ -162,7 +118,7 @@ public class Moverse implements SistemaActividadHumana<ObjetoMovil> {
 		Double	Velocidad 	= new Double(1);		
 		Coordinate origen	= actor.getGeometria().getCoordinate();
 		
-		if(origen.distance(destino)==0){
+		if(origen.distance(destino)!=0){
 			
 			if(destino.x-origen.x>Velocidad){			
 				origen.x 	+=Velocidad;						
@@ -177,24 +133,10 @@ public class Moverse implements SistemaActividadHumana<ObjetoMovil> {
 			}
 			
 			SAABGeography.move(actor,actor.getGeometria());	
-			this.Costo +=4;
-		}		
-	}
-	
-	/**
-	 * Calcula el camino más corto entre el origen y el destino, usando la proyeccion de Junctions
-	 */
-	private void calculePath(GeografiaFija destino, ObjetoMovil actor){
-		
-		ShortestPath helper 	= new ShortestPath(JunctionsNetwork);
-		
-		//Junction source = new Junction("origen","temporal");
-		//Junction target = new Junction("destino","temporal");
-		
-		//this.JunctionsContext.add(source);
-		//this.JunctionsContext.add(target);
-		
-		//this.Path = helper.getPath(source, target);		
+			this.Costo +=12;
+		}else{
+			this.Estado = EstadosActividad.DONE.toString();
+		}
 	}
 	
 	
@@ -207,13 +149,13 @@ public class Moverse implements SistemaActividadHumana<ObjetoMovil> {
 	@Override
 	public int getPaso() {
 		// TODO Auto-generated method stub
-		return 0;
+		return this.paso;
 	}
 
 	@Override
 	public String getEstado() {
 		// TODO Auto-generated method stub
-		return null;
+		return this.Estado;
 	}
 
 	@Override
@@ -236,12 +178,12 @@ public class Moverse implements SistemaActividadHumana<ObjetoMovil> {
 		SAABGeography = sAABGeography;
 	}
 
-	public Geometry getDestino() {
-		return Destino;
+	public Coordinate getDestino() {
+		return destino;
 	}
 
-	public void setDestino(Geometry destino) {
-		Destino = destino;
+	public void setDestino(Coordinate destino) {
+		destino = destino;
 	}	
 	
 

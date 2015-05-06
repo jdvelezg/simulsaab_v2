@@ -6,7 +6,10 @@ package simulaSAAB.agentes;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.vividsolutions.jts.geom.Coordinate;
+
 import repast.simphony.engine.schedule.ScheduledMethod;
+import simulaSAAB.comunicacion.MensajeACL;
 import simulaSAAB.comunicacion.Oferta;
 import simulaSAAB.comunicacion.Producto;
 import simulaSAAB.comunicacion.Proposito;
@@ -171,6 +174,7 @@ public class Productor implements AgenteInteligente, Oferente {
 		
 		Oferta novaOferta = new Oferta(producto,192,true,precio*producto.getCantidad());
 		novaOferta.setPuntoOferta(puntoOferta);
+		novaOferta.setUbicacion(ubicacionOfertas());
 		
 		this.Ofertas.add(novaOferta);
 		this.Productos.remove(producto);
@@ -308,7 +312,17 @@ public class Productor implements AgenteInteligente, Oferente {
 		this.puntoOferta = puntoOferta;
 	}
 	
-	
+	public Coordinate ubicacionOfertas(){
+		
+		return this.TerrenosCultivables.get(0).getGeometria().getCoordinate();
+	}
+
+
+	@Override
+	public void recibirMensaje(MensajeACL mssg) {
+		// TODO Auto-generated method stub
+		
+	}
 	
 
 

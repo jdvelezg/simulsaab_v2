@@ -29,6 +29,7 @@ public interface SistemaActividadHumana <T>{
 	 * @return
 	 */
 	public String getEstado();
+	//public boolean isDone();
 	
 	/**
 	 * Devuelve el nombre generico del sistema de actividad humana.

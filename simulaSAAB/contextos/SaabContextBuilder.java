@@ -74,10 +74,12 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 	public static Network<Object> SISAABNetwork;
 	
 	public static Context<Object> ComercialContext;
+	public static Context<Object> TransaccionContext;
 	public static Network<Object> ComercialNetwork;
 	public static Context<Object> OrdenesContext;
 	
 	//Vias Context
+	public static volatile Map<Coordinate, Junction> coordMap;
 	public static Context<Object> RoadContext;
 	public static Geography<Object> RoadGeography;
 	
@@ -107,14 +109,16 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 		
 		cargarShapeFiles(VariablesGlobales.MUNICIPIOS_SHAPEFILE,"municipios",RuralContext,SAABGeography);
 		cargarShapeFiles(VariablesGlobales.CENTROSURBANOS_SHAPEFILE,"urbano",RuralContext,SAABGeography);
+		cargarShapeFiles(VariablesGlobales.URBANOSACCESS_SHAPEFILE,"urbano_access",RuralContext,SAABGeography);
 		
 		//Contexto Distrital
 		BogotaContext =new BogotaContext();
 		SAABContext.addSubContext(BogotaContext);
 		
 		cargarShapeFiles(VariablesGlobales.PLAZASDISTRITALES_SHAPEFILE,"plazas",BogotaContext,SAABGeography);
+		cargarShapeFiles(VariablesGlobales.PLAZASACCESS_SHAPEFILE,"plazas_access",BogotaContext,SAABGeography);
 		cargarShapeFiles(VariablesGlobales.PLAZASVORNOI_SHAPEFILE,"area_plaza",BogotaContext,SAABGeography);
-		cargarShapeFiles(VariablesGlobales.NODOSSAAB_SHAPEFILE,"nodos",BogotaContext,SAABGeography);
+		
 				
 		//cargarShapeFiles(VariablesGlobales.BOGOTA_SHAPEFILE,"urbano",BogotaContext,SAABGeography);
 		
@@ -122,10 +126,15 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 		SISAABContext = new SISaabContext();
 		SAABContext.addSubContext(SISAABContext);
 		
+		cargarShapeFiles(VariablesGlobales.NODOSSAAB_SHAPEFILE,"nodos",SISAABContext,SAABGeography);
+		
 		ComercialContext = new DefaultContext<Object>(VariablesGlobales.CONTEXTO_COMERCIAL);
 		SISAABContext.addSubContext(ComercialContext);
 		
-		NetworkBuilder<Object> NetComercialBuilder	=new NetworkBuilder<Object>(VariablesGlobales.NETWORK_COMERCIAL,ComercialContext,false);
+		TransaccionContext = new TransaccionContext();
+		SISAABContext.addSubContext(ComercialContext);
+		
+		NetworkBuilder<Object> NetComercialBuilder	=new NetworkBuilder<Object>(VariablesGlobales.NETWORK_COMERCIAL,TransaccionContext,false);
 		NetComercialBuilder.setEdgeCreator(new DefaultEdgeCreator<Object>());
 		ComercialNetwork = NetComercialBuilder.buildNetwork();		
 		
@@ -136,10 +145,10 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 		RoadContext = new RoadContext();
 		SAABContext.addSubContext(RoadContext);
 		
-		GeographyParameters<Object>	geoRoadparams 	= new GeographyParameters<Object>();		
-		RoadGeography = GeographyFactoryFinder.createGeographyFactory(null).createGeography(VariablesGlobales.GEOGRAFIA_RUTAS, RoadContext, geoRoadparams);
+		//GeographyParameters<Object>	geoRoadparams 	= new GeographyParameters<Object>();		
+		//RoadGeography = GeographyFactoryFinder.createGeographyFactory(null).createGeography(VariablesGlobales.GEOGRAFIA_RUTAS, RoadContext, geoRoadparams);
 		
-		//cargarShapeFiles(VariablesGlobales.RUTAS_SHAPEFILE,"via",RoadContext,SAABGeography);
+		cargarShapeFiles(VariablesGlobales.RUTAS_SHAPEFILE,"via",RoadContext,SAABGeography);
 		
 		//Network de conexiones
 		JunctionsContext = new JunctionContext();
@@ -167,7 +176,7 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 		IndexedIterable<Object> rutas =rutasContext.getObjects(ViaTransitable.class);
 		// Create a cache of all Junctions and coordinates so we know if a junction has already been created at a
 		// particular coordinate
-		Map<Coordinate, Junction> coordMap = new HashMap<Coordinate, Junction>();
+		this.coordMap = new HashMap<Coordinate, Junction>();
 		
 		//Por cada viaTransitable se crean las conexiones (junctions) y su respectivo vertice (Edge)
 		for(Object v: rutas){
@@ -332,7 +341,7 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 					geography.move(pueblo, geom);
 					
 					/**Agrega el centro urbano al ambiente-municipio que lo intercepta
-					 * Es necesario que el shpFile de municipios haya sido cargado con anteriorridad
+					 * Es necesario que el shpFile de municipios haya sido cargado con anterioridad
 					 */
 					IndexedIterable ambientes 	= context.getObjects(AmbienteLocal.class);
 					Iterator iter 				= ambientes.iterator();
@@ -350,6 +359,7 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 								 * Agerga productores al municipio, enlazando sus centros urbanos como puntos de oferta
 								 */
 								municipio.addCentroUrbano(pueblo);
+								pueblo.setMunicipio(municipio);
 								crearProductores(municipio, pueblo,numeroProductores,geography,context);
 								
 							}
@@ -359,18 +369,88 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 				}//end if			
 				
 				break;
-			case "junction"://Cuando carga puntos de navegacion desde un shapefile		
+			case "urbano_access"://Cuando carga puntos de navegacion desde un shapefile		
 								
-				/*name 			=(String)feature.getAttribute("Name");
-				tipojunction 	=(String)feature.getAttribute("TYPE");
-				pesoJunction	=(Integer)feature.getAttribute("weight");
+				name 			= (String)feature.getAttribute("Name");				
+				Coordinate p1 	= geom.getCoordinates()[0];// First coord
+				Coordinate p2 	= geom.getCoordinates()[geom.getNumPoints()-1];// Last coord
 				
-				junction = new Junction(name, tipojunction);
-				junction.setWeight(pesoJunction);
-				junction.setGeometria(geom);				
-								
-				context.add(junction);
-				geography.move(junction, geom);*/
+				IndexedIterable<Object> pbls 	= context.getObjects(CentroUrbano.class);
+				Iterator<Object> iter 			= pbls.iterator();
+				
+				while(iter.hasNext()){
+					
+					Object obj	= iter.next();					
+					if(obj instanceof CentroUrbano){							
+						
+						CentroUrbano pbl 	= (CentroUrbano)obj;
+						if(pbl.getNombre().equalsIgnoreCase(name)){
+							
+							if(p1.distance(pbl.getCentroid().getCoordinate())<p2.distance(pbl.getCentroid().getCoordinate())){
+								pbl.setRoadAccess(p1);
+							}else{
+								pbl.setRoadAccess(p2);
+							}
+						}
+												
+					}
+				}//End While
+				
+				break;
+			case "plazas_access"://Cuando carga puntos de navegacion desde un shapefile		
+				
+				name 			= (String)feature.getAttribute("Name");				
+				Coordinate pl1 	= geom.getCoordinates()[0];// First coord
+				Coordinate pl2 	= geom.getCoordinates()[geom.getNumPoints()-1];// Last coord
+				
+				IndexedIterable<Object> plzs 	= context.getObjects(PlazaDistrital.class);
+				Iterator<Object> pl_iter 		= plzs.iterator();
+				
+				while(pl_iter.hasNext()){
+					
+					Object obj	= pl_iter.next();					
+					if(obj instanceof PlazaDistrital){							
+						
+						PlazaDistrital plz 	= (PlazaDistrital)obj;
+						if(plz.getNombre().equalsIgnoreCase(name)){
+							
+							if(pl1.distance(plz.getCentroid().getCoordinate())<pl2.distance(plz.getCentroid().getCoordinate())){
+								plz.setRoadAccess(pl1);
+							}else{
+								plz.setRoadAccess(pl2);
+							}
+						}
+												
+					}
+				}//End While
+				
+				break;
+			case "nodo_access"://Cuando carga puntos de navegacion desde un shapefile		
+				
+				name 			= (String)feature.getAttribute("Name");				
+				Coordinate nd1 	= geom.getCoordinates()[0];// First coord
+				Coordinate nd2 	= geom.getCoordinates()[geom.getNumPoints()-1];// Last coord
+				
+				IndexedIterable<Object> nodos 	= context.getObjects(NodoSaab.class);
+				Iterator<Object> nd_iter 		= nodos.iterator();
+				
+				while(nd_iter.hasNext()){
+					
+					Object obj	= nd_iter.next();					
+					if(obj instanceof NodoSaab){							
+						
+						NodoSaab nd 	= (NodoSaab)obj;
+						if(nd.getNombre().equalsIgnoreCase(name)){
+							
+							if(nd1.distance(nd.getCentroid().getCoordinate())<nd2.distance(nd.getCentroid().getCoordinate())){
+								nd.setRoadAccess(nd1);
+							}else{
+								nd.setRoadAccess(nd2);
+							}
+						}
+												
+					}
+				}//End While
 				
 				break;
 			case "via"://Cuando carga rutas, calles y vías		

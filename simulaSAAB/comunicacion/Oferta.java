@@ -3,6 +3,8 @@ package simulaSAAB.comunicacion;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.vividsolutions.jts.geom.Coordinate;
+
 import repast.simphony.engine.environment.RunEnvironment;
 import repast.simphony.engine.schedule.ScheduledMethod;
 import simulaSAAB.agentes.Oferente;
@@ -51,6 +53,10 @@ public class Oferta implements Concepto {
 	 * CentroUrbano puntoOferta. El punto de oferta al que corresponde la oferta
 	 */
 	private CentroUrbano puntoOferta;
+	/**
+	 * Ubicacion fisica de la oferta
+	 */
+	private Coordinate ubicacion;
 	
 	/**
 	 * Constructor
@@ -249,6 +255,15 @@ public class Oferta implements Concepto {
 	public void setPuntoOferta(CentroUrbano puntoOferta) {
 		this.puntoOferta = puntoOferta;
 	}
+
+	public Coordinate getUbicacion() {
+		return ubicacion;
+	}
+
+	public void setUbicacion(Coordinate ubicacion) {
+		this.ubicacion = ubicacion;
+	}
+	
 	
 	
 	

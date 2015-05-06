@@ -64,19 +64,24 @@ public class ProcesoAgenteHumano implements SistemaActividadHumana<AgenteIntelig
 			case 2:				
 				//LOGGER.log(Level.INFO, this.toString() + " Paso 2." + actor.toString()+actor.getActividadVigente().toString());				
 				actor.tomarDecisiones();
+				paso++;
+				
+				break;
+			case 3:				
+				//LOGGER.log(Level.INFO, this.toString() + " Paso 2." + actor.toString()+actor.getActividadVigente().toString());
 				actor.actuar();
 				
 				if(actor.getEstado().equalsIgnoreCase("IDLE"))
 					paso++;
 				
 				break;
-			case 3: 				
+			case 4: 				
 				//LOGGER.log(Level.INFO, this.toString() + " Paso 3. Actor: " + actor.toString());				
 				actor.juzgarMundoSegunEstandares();
 				
 				paso++;
 				break;
-			case 4: 				
+			case 5: 				
 				//LOGGER.log(Level.INFO, this.toString() + " Paso 3. Actor: " + actor.toString());				
 				this.Estado =EstadosActividad.DONE.toString();
 				
@@ -106,6 +111,16 @@ public class ProcesoAgenteHumano implements SistemaActividadHumana<AgenteIntelig
 	public int getPaso() {
 		// TODO Auto-generated method stub
 		return this.paso;
+	}
+	
+	public void setPaso(int paso){
+		
+		if(paso==0)
+			this.Estado = EstadosActividad.READY.toString();
+		else
+			this.Estado = EstadosActividad.RUNNING.toString();
+		
+		this.paso = paso;
 	}
 
 	@Override

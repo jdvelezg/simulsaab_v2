@@ -3,6 +3,7 @@ package simulaSAAB.agentes;
 import java.util.List;
 
 import simulaSAAB.comunicacion.Experiencia;
+import simulaSAAB.comunicacion.MensajeACL;
 import simulaSAAB.tareas.SistemaActividadHumana;
 
 public interface AgenteInteligente {
@@ -92,5 +93,10 @@ public interface AgenteInteligente {
 	 * @param exp
 	 */
 	void addExperiencia(Experiencia exp);
+	
+	/**
+	 * Recibe mensajes ACL, y los guarda en una cola para ser posteriormente atendidos
+	 */
+	void recibirMensaje(MensajeACL mssg);
 
 }

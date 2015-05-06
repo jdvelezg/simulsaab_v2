@@ -20,4 +20,16 @@ public class OperadorRedDemanda implements Demandante {
 
 	}
 
+	@Override
+	public boolean intencionDeConsolidacion() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public void setIntencionConsolidacion(boolean bool) {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

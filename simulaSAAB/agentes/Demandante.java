@@ -7,11 +7,25 @@ public interface Demandante {
 	/**
 	 * Registra demandas de productos en el SAAB
 	 */
-	public Demanda generarDemanda();
+	Demanda generarDemanda();
 	
 	/**
 	 * Realiza compra de productos mediante el SAAB a partir de las demandas registradas 
 	 */
-	public void realizarCompra();
+	void realizarCompra();
+	
+	/**
+	 * Devuelve <code>true</code> si el agente esta dispuesto a consolidar sus demandas
+	 * con otro(s) agente(s) <code>Demandante</code>(s)
+	 * @return
+	 */
+	boolean intencionDeConsolidacion();
+	
+	/**
+	 * Modifica el valor que define si el agente esta dispuesto a consolidar sus demandas
+	 */
+	void setIntencionConsolidacion(boolean bool);
+	
+	
 
 }

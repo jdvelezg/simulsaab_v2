@@ -43,6 +43,7 @@ public class ViaTransitable extends DefaultContext<Object> implements GeografiaF
 	public ViaTransitable(){
 		
 		this.junctions = new ArrayList<Junction>();
+		setMultiplicador();
 	}
 	
 	/**
@@ -181,6 +182,9 @@ public class ViaTransitable extends DefaultContext<Object> implements GeografiaF
 		Multiplicador = multiplicador;
 	}
 	
+	public Coordinate[] getCoordinates(){
+		return this.Geometria.getCoordinates();
+	}
 	
 
 }

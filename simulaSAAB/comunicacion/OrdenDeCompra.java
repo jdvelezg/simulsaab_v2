@@ -1,6 +1,7 @@
 package simulaSAAB.comunicacion;
 
-import java.util.List;
+
+import simulaSAAB.contextos.CentroUrbano;
 
 public class OrdenDeCompra implements Concepto {
 	
@@ -8,9 +9,9 @@ public class OrdenDeCompra implements Concepto {
 	
 	private Demanda Demanda;
 	
-	private Recurso DetalleCompra;
-	
 	private Dinero PagoAcordado;
+	
+	private CentroUrbano PuntoDeOferta;
 	
 	/**
 	 * Constructor
@@ -27,10 +28,10 @@ public class OrdenDeCompra implements Concepto {
 	public OrdenDeCompra(Oferta offer, Demanda demand) {
 		
 		
-		this.Oferta 	= offer;
-		this.Demanda	= demand;
+		this.Oferta 		= offer;
+		this.Demanda		= demand;
+		this.PagoAcordado	= new Dinero(offer.getPrecio());
 		
-		// TODO Auto-generated constructor stub
 	}
 
 	public Oferta getOferta() {
@@ -50,19 +51,15 @@ public class OrdenDeCompra implements Concepto {
 	}
 
 	public Recurso getDetalleCompra() {
-		return DetalleCompra;
+		return Oferta.getProductos();
 	}
 
-	public void setDetalleCompra(Recurso detalleCompra) {
-		DetalleCompra = detalleCompra;
-	}
-
-	public Dinero getPagoEfectuado() {
+	public Dinero getPagoAcordado() {
 		return PagoAcordado;
 	}
 
-	public void setPagoEfectuado(Dinero pagoEfectuado) {
-		PagoAcordado = pagoEfectuado;
+	public CentroUrbano getPuntoDeOferta() {
+		return Oferta.getPuntoOferta();
 	}
 	
 	

@@ -53,7 +53,9 @@ public class RegistrarDemandaUnitaria implements
 			
 			SiSaab.realizarCompra(compra, demanda);
 			
-		}else{//No existen ofertas para la demanda TODO: consolidar demanda
+		}else{//No existen ofertas para la demanda 
+			
+			//TODO: consolidar demanda
 			
 		}
 		

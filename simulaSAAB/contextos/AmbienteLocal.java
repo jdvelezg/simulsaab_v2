@@ -6,7 +6,9 @@ package simulaSAAB.contextos;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.Point;
 
 import repast.simphony.context.DefaultContext;
 import simulaSAAB.comunicacion.Producto;
@@ -34,6 +36,8 @@ public class AmbienteLocal extends DefaultContext<Object> implements GeografiaFi
 	private List<NodoSaab> NodosSaab;
 	
 	private List<CentroUrbano> CentrosUrbanos;
+	
+	private Coordinate roadAccess;
 	
 	
 	public AmbienteLocal(){
@@ -126,6 +130,16 @@ public class AmbienteLocal extends DefaultContext<Object> implements GeografiaFi
 
 	public void setCentrosUrbanos(List<CentroUrbano> centrosUrbanos) {
 		CentrosUrbanos = centrosUrbanos;
+	}
+
+
+	public Coordinate getRoadAccess() {
+		return roadAccess;
+	}
+
+
+	public void setRoadAccess(Coordinate roadAccess) {
+		this.roadAccess = roadAccess;
 	}
 	
 	
