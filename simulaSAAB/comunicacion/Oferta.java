@@ -2,16 +2,25 @@ package simulaSAAB.comunicacion;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.vividsolutions.jts.geom.Coordinate;
 
 import repast.simphony.engine.environment.RunEnvironment;
 import repast.simphony.engine.schedule.ScheduledMethod;
 import simulaSAAB.agentes.Oferente;
+import simulaSAAB.agentes.Productor.ProductorTrack;
 import simulaSAAB.contextos.CentroUrbano;
+import simulaSAAB.global.persistencia.AgentTrackObservable;
 import simulaSAAB.global.persistencia.ProductoConfigurado;
+import simulaSAAB.tareas.ProducirCebollaBulbo;
 
 public class Oferta implements Concepto {
+	
+	private static Logger LOGGER = Logger.getLogger(Oferta.class.getName());
+	
+	public final OfertaTrack OBSERVABLE = new OfertaTrack(); 
 	
 	/**
 	 * String producto. Nombre del producto ofertado.
@@ -61,9 +70,9 @@ public class Oferta implements Concepto {
 	/**
 	 * Constructor
 	 */
-	public Oferta(String producto) {
-		
-		this.nombreproducto = producto;
+	public Oferta(Recurso producto) {		
+		this.nombreproducto = producto.getProducto().getNombre();
+		this.Productos		= producto;
 	}
 	
 	public Oferta(Recurso productos, int ciclosVigencia, boolean consolidable, Double precio){
@@ -80,9 +89,9 @@ public class Oferta implements Concepto {
 	/**
 	 * Calcula el vencimiento de la oferta despues de ser registrada
 	 */
-	@ScheduledMethod (start = 1, interval = 1)
+	//@ScheduledMethod (interval = 1)
 	public void step () {
-		
+	
 		if(vigente()){
 			
 			Double CurrentTick = RunEnvironment.getInstance().getCurrentSchedule().getTickCount();
@@ -215,13 +224,7 @@ public class Oferta implements Concepto {
 		setEstado("VENDIDA");
 	}
 
-	public void setEstado(String estado) {
-		
-		if(estado.equalsIgnoreCase("VIGENTE"))
-			setVigente();
-		else if(estado.equalsIgnoreCase("VENCIDA"))
-			setVencida();
-		else
+	public void setEstado(String estado) {				
 			Estado = estado;
 	}
 	
@@ -229,6 +232,7 @@ public class Oferta implements Concepto {
 		
 		Tickinicial	= RunEnvironment.getInstance().getCurrentSchedule().getTickCount();
 		setEstado("VIGENTE");
+		OBSERVABLE.setOfertaRegistrada();
 	}
 	
 	public void setVencida(){
@@ -265,7 +269,101 @@ public class Oferta implements Concepto {
 	}
 	
 	
-	
+	public class OfertaTrack extends AgentTrackObservable{
+		
+		private Double tick;
+		
+		private final String ofertaID;
+		
+		private String oferenteID;
+		
+		private Double precio;
+		
+		private String producto;
+		
+		private Double cantidad;
+		
+		/**
+		 * Constructor
+		 */
+		public OfertaTrack(){
+			
+			super();
+			this.ofertaID = Oferta.this.toString();			
+		}
+		
+		/**
+		 * reporta el registro de la demanda
+		 */
+		public void setOfertaRegistrada(){
+			
+			this.tick		= RunEnvironment.getInstance().getCurrentSchedule().getTickCount();
+			this.oferenteID	= Oferta.this.vendedor.toString();
+			this.producto	= Oferta.this.getNombreProducto();						
+			this.cantidad	= Oferta.this.getCantidad();
+			this.precio		= Oferta.this.precio;
+			
+			super.setChanged();
+			super.notifyObservers(this);
+		}
+
+		@Override
+		public String dataLineString(String separador) {			
+			
+			return tick.toString()+separador+ofertaID+separador+oferenteID+separador+producto+separador+precio.toString()+separador+cantidad.toString()+separador;
+		}
+
+		@Override
+		public String dataLineStringHeader(String separador) {
+			
+			return "tick"+separador+"Oferta_ID"+separador+"Oferente_ID"+separador+"Producto"+separador+"Precio"+separador+"Cantidad"+separador;
+		}
+		
+		
+		/**Getters & Setters **/
+		
+		
+		public Double getTick() {
+			return tick;
+		}
+
+		public void setTick(Double tick) {
+			this.tick = tick;
+		}
+
+		public String getOfertaID() {
+			return ofertaID;
+		}
+
+		public String getProductorID() {
+			return oferenteID;
+		}
+
+		public Double getPrecio() {
+			return precio;
+		}
+
+		public void setPrecio(Double precio) {
+			this.precio = precio;
+		}
+
+		public String getProducto() {
+			return producto;
+		}
+
+		public void setProducto(String producto) {
+			this.producto = producto;
+		}
+
+		public Double getCantidad() {
+			return cantidad;
+		}
+
+		public void setCantidad(Double cantidad) {
+			this.cantidad = cantidad;
+		}		
+		
+	}
 	
 
 }

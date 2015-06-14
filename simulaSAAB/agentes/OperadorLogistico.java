@@ -6,8 +6,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import repast.simphony.context.Context;
+import repast.simphony.engine.environment.RunEnvironment;
+import repast.simphony.engine.schedule.ISchedule;
+import repast.simphony.engine.schedule.Schedule;
+import repast.simphony.engine.schedule.ScheduleParameters;
 import repast.simphony.engine.schedule.ScheduledMethod;
 import repast.simphony.space.gis.Geography;
 import repast.simphony.space.graph.Network;
@@ -20,6 +26,7 @@ import simulaSAAB.contextos.CentroUrbano;
 import simulaSAAB.contextos.NodoSaab;
 import simulaSAAB.contextos.SaabContextBuilder;
 import simulaSAAB.contextos.environment.Junction;
+import simulaSAAB.tareas.ProducirCebollaBulbo;
 import simulaSAAB.tareas.RecolectarProductos;
 import simulaSAAB.tareas.SistemaActividadHumana;
 import simulaSAAB.tareas.Moverse;
@@ -33,15 +40,11 @@ import com.vividsolutions.jts.geom.Point;
 
 public class OperadorLogistico implements AgenteReactivo {
 	
+	private static Logger LOGGER = Logger.getLogger(OperadorLogistico.class.getName());
+	
 	private SistemaActividadHumana TransportarProductos;
 	
 	private SistemaActividadHumana Moverse;
-	
-	public static Context<Object> SISAABContext = SaabContextBuilder.SISAABContext;
-	
-	private final Geography<Object> SAABGeography = SaabContextBuilder.SAABGeography;
-	
-	public final Context<Object> OrdenesContext = SaabContextBuilder.OrdenesContext;
 	
 	/**
 	 * Constructor
@@ -53,23 +56,32 @@ public class OperadorLogistico implements AgenteReactivo {
 	/**
 	 * 
 	 */
-	@ScheduledMethod (start = 1, interval = 24)
+	@ScheduledMethod (start = 24, interval = 24)
 	public void step(){
 		
-		IndexedIterable<Object> ordenes = OrdenesContext.getObjects(OrdenDeServicio.class);
-		IndexedIterable<Object> nodos = SISAABContext.getObjects(NodoSaab.class);
-		
+		IndexedIterable<Object> ordenes 	= SaabContextBuilder.OrdenesContext.getObjects(OrdenDeServicio.class);
+		IndexedIterable<Object> nodos 		= SaabContextBuilder.SISAABContext.getObjects(NodoSaab.class);		
+		/*
+		 * Revisa el SISAAB, Si se generaron ordenes de servicio, 
+		 * las procesa, recogiendo los productos y entregandolos
+		 * al nodo logistico más cercano
+		 */
 		if(ordenes.size()>0){
 			atenderOrdenDeServicio(ordenes);
-		}
-		
+		}else{
+			LOGGER.log(Level.INFO,"OPER-DONE-NOTH; ordenes: "+ordenes.size());
+		}		
+		/*
+		 * Revisa cada nodo logístico. Si ha recibido ordenes de servicio,
+		 * las procesa, llevandolas a su destino
+		 */
 		for(Object o: nodos){
 			
 			NodoSaab nodo = (NodoSaab)o;
 			List<OrdenDeServicio> servicios = nodo.getOrdenes();
 			
 			if(servicios.size()>0){
-				
+				LOGGER.log(Level.INFO," despacha orden servicio: "+servicios.size());
 				despacharPedido(nodo, servicios);
 			}
 		}
@@ -81,16 +93,16 @@ public class OperadorLogistico implements AgenteReactivo {
 	 */
 	public synchronized void atenderOrdenDeServicio(IndexedIterable<Object> ordenes){
 		
-		Map<AmbienteLocal,List<OrdenDeServicio>> AgendaRecoleccion = new ConcurrentHashMap<AmbienteLocal,List<OrdenDeServicio>>();
+		Map<CentroUrbano,List<OrdenDeServicio>> AgendaRecoleccion = new ConcurrentHashMap<CentroUrbano,List<OrdenDeServicio>>();
 		
 		//obtiene las ordenes de serviciologistico
 		//IndexedIterable<Object> ordenes = OrdenesContext.getObjects(OrdenDeServicio.class);
 		
-		//Agrupa las ordenes por punto de oferta
+		//Agrupa las ordenes por punto de oferta (CentroUrbano)
 		for(Object obj: ordenes){
 			
 			OrdenDeServicio orden 	= (OrdenDeServicio)obj;
-			AmbienteLocal origen 	= orden.getOrigen();
+			CentroUrbano origen 	= orden.getOrigen();
 			
 			if(AgendaRecoleccion.containsKey(origen)){
 				
@@ -106,9 +118,9 @@ public class OperadorLogistico implements AgenteReactivo {
 		}//end Foreach
 		
 		//Recolecta productos
-		Set<AmbienteLocal> pueblos = AgendaRecoleccion.keySet();
+		Set<CentroUrbano> pueblos = AgendaRecoleccion.keySet();
 		
-		for(AmbienteLocal pueblo: pueblos){
+		for(CentroUrbano pueblo: pueblos){
 			
 			recolectarProductos(pueblo,AgendaRecoleccion.get(pueblo));
 		}		
@@ -120,14 +132,13 @@ public class OperadorLogistico implements AgenteReactivo {
 	 * Transitar ida y vuelta.
 	 * @param orden
 	 */
-	private void recolectarProductos(AmbienteLocal puntoOferta, List<OrdenDeServicio> ordenes){
+	private void recolectarProductos(CentroUrbano puntoOferta, List<OrdenDeServicio> ordenes){
 		
 		Coordinate origen	= puntoOferta.getNodosSaab().get(0).getRoadAccess();
-	
-		CentroUrbano puebloOfertas = (CentroUrbano)puntoOferta;
-		RecolectarProductos actividad = new RecolectarProductos(puntoOferta.getNodosSaab().get(0),puebloOfertas,ordenes);
+		LOGGER.log(Level.INFO," punto de Oferta: "+puntoOferta.getNombre()+" acceso: "+origen.toString());
+		RecolectarProductos actividad = new RecolectarProductos(puntoOferta.getNodosSaab().get(0),puntoOferta,ordenes);
 		
-		crearTransporte(origen, actividad);		
+		//crearTransporte(origen, actividad);		
 	}
 	
 	/**
@@ -142,7 +153,7 @@ public class OperadorLogistico implements AgenteReactivo {
 		//Agrupa las ordenes por punto de demanda
 		for(OrdenDeServicio orden: ordenes){			
 			
-			NodoSaab destino 		= orden.getDestino();
+			NodoSaab destino = orden.getDestino();
 			
 			if(AgendaDespacho.containsKey(destino)){
 				
@@ -168,7 +179,7 @@ public class OperadorLogistico implements AgenteReactivo {
 			
 			SistemaActividadHumana actividad = new Transitar(origen,destino);
 			
-			crearTransporte(origen,actividad);
+			//crearTransporte(origen,actividad);
 		}
 	}
 
@@ -184,13 +195,24 @@ public class OperadorLogistico implements AgenteReactivo {
 		//crea un agente camion
 		Camion transporte = new Camion();
 		GeometryFactory geofact = new GeometryFactory();
-		Point geom = geofact.createPoint(origen);
+		Point geom = geofact.createPoint(new Coordinate(origen.x,origen.y));
 		transporte.setGeometria(geom);
-					
-		transporte.setActividadVigente(actividad);
-		SISAABContext.add(transporte);
-		SAABGeography.move(transporte, geom);		
+				
+		transporte.setActividadVigente(actividad.getInstance());
+		SaabContextBuilder.SISAABContext.add(transporte);
+		SaabContextBuilder.SAABGeography.move(transporte, geom);
 		
+		/*
+		 * Crea un objeto Schedule y agrega el objeto para que su metodo step sea ejecutado 
+		 * en cada tick de la simulación
+		 */
+		double tick = RunEnvironment.getInstance().getCurrentSchedule().getTickCount();
+		double start = tick < 1 ? 1 : tick + 2;
+		int interval = 1;
+		
+		ScheduleParameters params = ScheduleParameters.createRepeating(start,interval);
+		ISchedule sch = RunEnvironment.getInstance().getCurrentSchedule();
+		sch.schedule(params, transporte, "step");		
 	}
 	
 	

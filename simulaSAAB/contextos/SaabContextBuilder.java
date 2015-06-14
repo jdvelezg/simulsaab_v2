@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -24,7 +25,10 @@ import com.vividsolutions.jts.geom.MultiLineString;
 import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
+import com.vividsolutions.jts.operation.distance.DistanceOp;
 
+import simulaSAAB.agentes.Camion;
+import simulaSAAB.agentes.OperadorLogistico;
 import simulaSAAB.agentes.Productor;
 import simulaSAAB.agentes.Terreno;
 import simulaSAAB.agentes.Tienda;
@@ -33,9 +37,16 @@ import simulaSAAB.comunicacion.Producto;
 import simulaSAAB.contextos.environment.Junction;
 import simulaSAAB.contextos.environment.NetworkEdge;
 import simulaSAAB.contextos.environment.NetworkEdgeCreator;
+import simulaSAAB.global.DataCollector;
 import simulaSAAB.global.SimulaSAABLogging;
 import simulaSAAB.global.VariablesGlobales;
+import simulaSAAB.tareas.ConsolidarDemanda;
+import simulaSAAB.tareas.Moverse;
 import simulaSAAB.tareas.ProducirCebollaBulbo;
+import simulaSAAB.tareas.RecolectarProductos;
+import simulaSAAB.tareas.RegistrarDemandaUnitaria;
+import simulaSAAB.tareas.RegistrarOfertaUnitaria;
+import simulaSAAB.tareas.SistemaActividadHumana;
 import simulaSAAB.contextos.environment.Junction;
 import simulaSAAB.contextos.exceptions.DuplicateRoadException;
 import simulaSAAB.contextos.exceptions.NoIdentifierException;
@@ -61,13 +72,13 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 	//Contexto principal
 	public static Context<Object> SAABContext;
 	public static Geography<Object> SAABGeography;
-
 	
 	//Contexto Rural
 	public static Context<Object> RuralContext;	
 	
 	//Contexto Distrital
 	public static Context<Object> BogotaContext;
+	public static Network<Object> NutriredesNetwork;
 	
 	//SISAAB Context
 	public static Context<Object> SISAABContext;
@@ -86,15 +97,17 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 	public static Context<Junction> JunctionsContext;
 	public static Network<Junction> RoadNetwork;
 	
+	//Recoleccion y guardado de datos
+	public static DataCollector OBSERVADOR;
 	
 	
 	
 
 	@Override
 	public Context<Object> build(Context<Object> context) {
-		
-		//Inicializa el log general
-		//SimulaSAABLogging.init();
+				
+		//Colectores de datos
+		OBSERVADOR 	= new DataCollector();
 		
 		//Referencia al contexto principal
 		SAABContext =context;		
@@ -119,6 +132,9 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 		cargarShapeFiles(VariablesGlobales.PLAZASACCESS_SHAPEFILE,"plazas_access",BogotaContext,SAABGeography);
 		cargarShapeFiles(VariablesGlobales.PLAZASVORNOI_SHAPEFILE,"area_plaza",BogotaContext,SAABGeography);
 		
+		NetworkBuilder<Object> NetNutriredesBuilder	=new NetworkBuilder<Object>(VariablesGlobales.NETWORK_NUTRIREDES,BogotaContext,false);
+		NetNutriredesBuilder.setEdgeCreator(new DefaultEdgeCreator<Object>());
+		NutriredesNetwork = NetNutriredesBuilder.buildNetwork();
 				
 		//cargarShapeFiles(VariablesGlobales.BOGOTA_SHAPEFILE,"urbano",BogotaContext,SAABGeography);
 		
@@ -126,7 +142,12 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 		SISAABContext = new SISaabContext();
 		SAABContext.addSubContext(SISAABContext);
 		
+		//Agrega el operador logístico
+		OperadorLogistico operador = new OperadorLogistico();
+		SISAABContext.add(operador);
+		
 		cargarShapeFiles(VariablesGlobales.NODOSSAAB_SHAPEFILE,"nodos",SISAABContext,SAABGeography);
+		cargarShapeFiles(VariablesGlobales.NODOSACCESS_SHAPEFILE,"nodo_access",SISAABContext,SAABGeography);
 		
 		ComercialContext = new DefaultContext<Object>(VariablesGlobales.CONTEXTO_COMERCIAL);
 		SISAABContext.addSubContext(ComercialContext);
@@ -140,14 +161,12 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 		
 		OrdenesContext = new DefaultContext(VariablesGlobales.CONTEXTO_ORDENES);
 		SISAABContext.addSubContext(OrdenesContext);
-				
+		
+		/*PERFORMANCE	*/	
 		//Contextos de rutas
 		RoadContext = new RoadContext();
 		SAABContext.addSubContext(RoadContext);
-		
-		//GeographyParameters<Object>	geoRoadparams 	= new GeographyParameters<Object>();		
-		//RoadGeography = GeographyFactoryFinder.createGeographyFactory(null).createGeography(VariablesGlobales.GEOGRAFIA_RUTAS, RoadContext, geoRoadparams);
-		
+						
 		cargarShapeFiles(VariablesGlobales.RUTAS_SHAPEFILE,"via",RoadContext,SAABGeography);
 		
 		//Network de conexiones
@@ -158,7 +177,13 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 		NetJunctionBuilder.setEdgeCreator(new DefaultEdgeCreator<Junction>());
 		RoadNetwork = NetJunctionBuilder.buildNetwork();
 		
-		//creaRutasNetwork(RoadContext, JunctionsContext, RoadNetwork);		
+		creaRutasNetwork(RoadContext, JunctionsContext, RoadNetwork);		
+		
+		/*
+		 * TODO validar la configuracion.
+		 * area_plaza, municipio, urbano con actividades y productos viables
+		 */		
+		crearRedSaab();
 		
 		return context;
 		
@@ -177,6 +202,8 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 		// Create a cache of all Junctions and coordinates so we know if a junction has already been created at a
 		// particular coordinate
 		this.coordMap = new HashMap<Coordinate, Junction>();
+		DataCollector textWriter = new DataCollector();
+		
 		
 		//Por cada viaTransitable se crean las conexiones (junctions) y su respectivo vertice (Edge)
 		for(Object v: rutas){
@@ -217,7 +244,7 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 			
 			// Create an edge between the two junctions, assigning a weight equal to it's length
 			NetworkEdge<Junction> edge = new NetworkEdge<Junction>(junc1, junc2, false, viageom.getLength()*via.getMultiplicador());
-			
+			textWriter.escribeDatos("freezedried_data/coordMap.txt","\n"+junc1.getCoords().toString()+" edge "+junc2.getCoords().toString());
 			// Tell the Road and the Edge about each other
 			via.setEdge(edge);
 			edge.setRoad(via);
@@ -228,7 +255,6 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 			
 		}//for each
 		
-		coordMap.clear();//Try to avoid memory overpassed
 	}
 	
 	/**
@@ -250,6 +276,14 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 		
 		int numeroVendedoresFinales 	= (Integer)params.getValue("num_vendfinales");		
 		int numeroProductores		 	= (Integer)params.getValue("num_productores");
+		
+		//MPAs a incluir
+		boolean producirCebolla_flag	= params.getBoolean("producirCebolla");
+		boolean registrarOferta_flag	= params.getBoolean("registrarOferta");
+		boolean registrarDemanda_flag	= params.getBoolean("registrarDemanda");
+		boolean consolidarDemanda_flag	= params.getBoolean("consolidarDemanda");
+		
+		SistemaActividadHumana moverse	= new Moverse();
 				
 		try{
 			
@@ -309,16 +343,21 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 				region 	= new AmbienteLocal(name);
 				region.setGeometria(geom);
 				
+				String nodosCercanos = (String)feature.getAttribute("NL_NAME_2");
+				region.setNodosCercanos(nodosCercanos);
+				
 				context.add(region);
 				geography.move(region, geom);
 				
 				region.addProductoAgricolaViable(new Producto("Cebolla"));
 				
 				if(!name.equalsIgnoreCase("bogota")){
-					region.addActividadViable(new ProducirCebollaBulbo());
+					
+					if(producirCebolla_flag){region.addActividadViable(new ProducirCebollaBulbo());}
+					if(registrarOferta_flag){region.addActividadViable(new RegistrarOfertaUnitaria());}
 				}
 				
-				LOGGER.log(Level.INFO, this.toString() + " Agregado municipio: "+name);
+				//LOGGER.log(Level.INFO, this.toString() + " Agregado municipio: "+name);
 				
 				break;
 			case "urbano"://Cuando carga Centros urbanos					
@@ -329,8 +368,10 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 				
 				context.add(pueblo);			
 				pueblo.addProductoAgricolaViable(new Producto("Cebolla"));
-				//pueblo.addActividadViable(new VenderCebollaBulbo());
-				//pueblo.addActividadViable(new VenderProductosEnBogota());				
+				
+				if(registrarDemanda_flag){pueblo.addActividadViable(new RegistrarDemandaUnitaria());}
+				if(consolidarDemanda_flag){pueblo.addActividadViable(new ConsolidarDemanda());}
+				
 				
 				if(!name.equalsIgnoreCase("Bogota")){
 					
@@ -354,7 +395,7 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 							AmbienteLocal municipio = (AmbienteLocal)mun;
 							if(municipio.getGeometria().intersects(geom)){
 								
-								LOGGER.log(Level.INFO, this.toString() + "Agrega Urbe:"+pueblo.getNombre()+" a municipio:"+municipio.getNombre());
+								//LOGGER.log(Level.INFO," Agrega Urbe:"+pueblo.getNombre()+" a municipio:"+municipio.getNombre());
 								/**
 								 * Agerga productores al municipio, enlazando sus centros urbanos como puntos de oferta
 								 */
@@ -371,7 +412,7 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 				break;
 			case "urbano_access"://Cuando carga puntos de navegacion desde un shapefile		
 								
-				name 			= (String)feature.getAttribute("Name");				
+				name 			= (String)feature.getAttribute("name");				
 				Coordinate p1 	= geom.getCoordinates()[0];// First coord
 				Coordinate p2 	= geom.getCoordinates()[geom.getNumPoints()-1];// Last coord
 				
@@ -384,12 +425,15 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 					if(obj instanceof CentroUrbano){							
 						
 						CentroUrbano pbl 	= (CentroUrbano)obj;
+						LOGGER.log(Level.INFO," compara "+pbl.getNombre()+"equalsIgnoreCase "+name);
 						if(pbl.getNombre().equalsIgnoreCase(name)){
 							
 							if(p1.distance(pbl.getCentroid().getCoordinate())<p2.distance(pbl.getCentroid().getCoordinate())){
 								pbl.setRoadAccess(p1);
+								LOGGER.log(Level.INFO,pbl.getNombre()+" agregado acceso: "+p1.toString());
 							}else{
 								pbl.setRoadAccess(p2);
+								LOGGER.log(Level.INFO,pbl.getNombre()+" agregado acceso: "+p2.toString());
 							}
 						}
 												
@@ -399,7 +443,7 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 				break;
 			case "plazas_access"://Cuando carga puntos de navegacion desde un shapefile		
 				
-				name 			= (String)feature.getAttribute("Name");				
+				name 			= (String)feature.getAttribute("name");				
 				Coordinate pl1 	= geom.getCoordinates()[0];// First coord
 				Coordinate pl2 	= geom.getCoordinates()[geom.getNumPoints()-1];// Last coord
 				
@@ -412,12 +456,15 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 					if(obj instanceof PlazaDistrital){							
 						
 						PlazaDistrital plz 	= (PlazaDistrital)obj;
+						LOGGER.log(Level.INFO," compara "+plz.getNombre()+"equalsIgnoreCase "+name);
 						if(plz.getNombre().equalsIgnoreCase(name)){
 							
 							if(pl1.distance(plz.getCentroid().getCoordinate())<pl2.distance(plz.getCentroid().getCoordinate())){
 								plz.setRoadAccess(pl1);
+								LOGGER.log(Level.INFO,plz.getNombre()+" agregado acceso: "+pl1.toString());
 							}else{
 								plz.setRoadAccess(pl2);
+								LOGGER.log(Level.INFO,plz.getNombre()+" agregado acceso: "+pl2.toString());
 							}
 						}
 												
@@ -427,30 +474,30 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 				break;
 			case "nodo_access"://Cuando carga puntos de navegacion desde un shapefile		
 				
-				name 			= (String)feature.getAttribute("Name");				
+				name 			= (String)feature.getAttribute("name");				
 				Coordinate nd1 	= geom.getCoordinates()[0];// First coord
 				Coordinate nd2 	= geom.getCoordinates()[geom.getNumPoints()-1];// Last coord
 				
 				IndexedIterable<Object> nodos 	= context.getObjects(NodoSaab.class);
-				Iterator<Object> nd_iter 		= nodos.iterator();
 				
-				while(nd_iter.hasNext()){
-					
-					Object obj	= nd_iter.next();					
-					if(obj instanceof NodoSaab){							
+				for(Object o: nodos){
+															
+					if(o instanceof NodoSaab){							
 						
-						NodoSaab nd 	= (NodoSaab)obj;
+						NodoSaab nd 	= (NodoSaab)o;
+						
 						if(nd.getNombre().equalsIgnoreCase(name)){
-							
+						
 							if(nd1.distance(nd.getCentroid().getCoordinate())<nd2.distance(nd.getCentroid().getCoordinate())){
 								nd.setRoadAccess(nd1);
+								LOGGER.log(Level.INFO,nd.getNombre()+" agregado acceso: "+nd1.toString());
 							}else{
 								nd.setRoadAccess(nd2);
-							}
-						}
-												
+								LOGGER.log(Level.INFO,nd.getNombre()+" agregado acceso: "+nd2.toString());
+							}						
+						}												
 					}
-				}//End While
+				}//End For
 				
 				break;
 			case "via"://Cuando carga rutas, calles y vías		
@@ -464,6 +511,7 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 				via.setNombre(name);
 				via.setTipo(tipo);
 				via.setGeografia(geography);
+				via.setGeometria(geom);
 				
 				context.add(via);
 				geography.move(via, geom);			
@@ -476,9 +524,7 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 				nodoSaab.setGeometria(geom); 
 				
 				context.add(nodoSaab);
-				geography.move(nodoSaab, geom);
-				
-				LOGGER.log(Level.INFO, this.toString() + "Agrega Nodo:"+nodoSaab.getNombre());
+				geography.move(nodoSaab, geom);			
 				
 				break;
 			case "plazas"://cuando carga Plazas Distritales
@@ -487,6 +533,7 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 				plaza 	=new PlazaDistrital(name);
 				
 				plaza.setGeometria(geom);
+				
 				
 				context.add(plaza);
 				geography.move(plaza, geom);			
@@ -497,6 +544,9 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 				name 	=(String)feature.getAttribute("Name");
 				region 	= new AmbienteLocal(name);
 				region.setGeometria(geom);
+				region.addProductoAgricolaViable(new Producto("Cebolla"));
+				if(registrarDemanda_flag){region.addActividadViable(new RegistrarDemandaUnitaria());}
+				if(consolidarDemanda_flag){region.addActividadViable(new ConsolidarDemanda());}
 				
 				/**
 				 * Agrega tenderos dentro del area de correspondencia de cada plaza distrital
@@ -528,6 +578,82 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 	
 	private void crearRedSaab(){
 		
+		/*
+		 * Itera los AmbientesLocales y agrega los nodosSaab cercanos 
+		 */
+		IndexedIterable<Object> ambientesLocales 	= this.SAABContext.getObjects(AmbienteLocal.class);
+		Iterator<Object> nodos 						= this.SAABContext.getObjects(NodoSaab.class).iterator();
+		
+		while(nodos.hasNext()){
+			
+			NodoSaab nodo		= (NodoSaab)nodos.next();
+			String NombreNodo 	= nodo.getNombre();
+			
+			for(Object o: ambientesLocales){
+				
+				if(!(o instanceof CentroUrbano)){
+					
+					AmbienteLocal amb	 = (AmbienteLocal)o;
+					String nodosCercanos = amb.getNodosCercanos();
+					//TODO comparar substrigs
+					if(nodosCercanos.equalsIgnoreCase(NombreNodo)){
+						amb.addNodoSaab(nodo);
+					}
+				}
+			}
+			
+			
+			
+			
+		}//EndWhile
+		
+		/*
+		 * Itera los CentrosUrbanos y agrega el nodo del Ambiente que lo contiene
+		 */
+		Iterator<Object> centrosUrbanos 	= this.SAABContext.getObjects(CentroUrbano.class).iterator();
+		
+		while(centrosUrbanos.hasNext()){
+			
+			CentroUrbano u = (CentroUrbano)centrosUrbanos.next();
+			
+			for(Object o: ambientesLocales){
+				
+				if(!(o instanceof CentroUrbano)){
+					
+					AmbienteLocal amb = (AmbienteLocal)o;
+					if(amb.getGeometria().contains(u.getGeometria())){
+						u.setNodosSaab(amb.getNodosSaab());			
+					}else if(amb.getNombre().equalsIgnoreCase(u.getNombre())){
+						u.setNodosSaab(amb.getNodosSaab());
+					}
+							
+				}
+			}
+			LOGGER.log(Level.INFO,u.getNombre()+" agregado nodo: "+u.getNodosSaab().size());		
+		}//EndWhile
+		
+		
+		/**
+		 * Prueba de camion
+		 */		
+		Iterator<Object> pueblos 	= SAABContext.getObjects(CentroUrbano.class).iterator();
+		Iterator<Object> nodosSaab 	= SAABContext.getObjects(NodoSaab.class).iterator();
+				
+		NodoSaab nodo1 		= (NodoSaab)nodosSaab.next();
+		CentroUrbano pueblo1 = (CentroUrbano)pueblos.next();
+						
+		Camion transporte = new Camion();
+		GeometryFactory geofact = new GeometryFactory();
+			
+		System.out.println("nodo1: "+nodo1.getNombre());
+				
+		Point geom = geofact.createPoint(new Coordinate(nodo1.getRoadAccess().x,nodo1.getRoadAccess().y));
+		transporte.setGeometria(geom);
+			
+		RecolectarProductos actividad = new RecolectarProductos(nodo1,pueblo1,new ArrayList()); 
+		transporte.setActividadVigente(actividad.getInstance());
+		SISAABContext.add(transporte);
+		SAABGeography.move(transporte, geom);		
 	}
 	
 	/**
@@ -551,7 +677,7 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 		for(int i=0; i<cantidad; i++){
 			
 			GeometryFactory geofact = new GeometryFactory();
-			Productor productor		= new Productor(); 
+			Productor productor		= new Productor();
 			
 			
 			Coordinate AgentCoord 	= new Coordinate(RandomHelper.nextDoubleFromTo(center.x,coords[RandomHelper.nextIntFromTo(0, coords.length-1)].x),RandomHelper.nextDoubleFromTo(center.y,coords[RandomHelper.nextIntFromTo(0, coords.length-1)].y));//center;			
@@ -573,7 +699,8 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 				productor.addTerrenos(terreno);
 				productor.setPuntoOferta(puntoOferta);
 				
-				terreno.setAmbiente((AmbienteLocal)amb);			
+				terreno.setAmbiente((AmbienteLocal)amb);				
+				
 			}
 			
 		}
@@ -583,7 +710,7 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 
 	/**
 	 * Crea y ubica los vendedores finales aleatoriamente en el contexto rural, usando el centroide
-	 * de la region y sus vertices para acotar el sector.
+	 * de la region y sus vertices para acotar el sector. A cada vendedor le asigna una cantidad aleatoria de dinero.
 	 * @param amb
 	 * @param cantidad
 	 * @param geography
@@ -611,19 +738,23 @@ public class SaabContextBuilder implements ContextBuilder<Object> {
 			
 			if(amb.getGeometria().intersects(geom.getGeometryN(0))){
 				
-				Point tiendageom 		= geofact.createPoint(AgentCoord);
+				Point tiendageom 		= geofact.createPoint((Coordinate)AgentCoord.clone());
 				Tienda tienda			= new Tienda(tiendageom);
 				
 				agente.addTienda(tienda);
+				agente.addDinero(RandomHelper.nextDoubleFromTo(1000000,50000000));
 				agente.setPuntoDemanda(plaza);
 				
 				contexto.add(agente);
 				contexto.add(tienda);
 				
+				tienda.setAmbiente(amb);
+				tienda.setPropietario(agente);
+				
 				geography.move(agente, geom);
 				geography.move(tienda, tiendageom);			
 				
-				LOGGER.log(Level.INFO, this.toString() + "Vendedor inside ");
+				//LOGGER.log(Level.INFO, this.toString() + "Vendedor inside ");
 			}					
 			
 		}		

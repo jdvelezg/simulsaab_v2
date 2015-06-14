@@ -2,7 +2,9 @@ package simulaSAAB.agentes;
 
 import java.util.List;
 
+import simulaSAAB.comunicacion.Dinero;
 import simulaSAAB.comunicacion.Experiencia;
+import simulaSAAB.comunicacion.MensajeACL;
 import simulaSAAB.comunicacion.Oferta;
 import simulaSAAB.tareas.SistemaActividadHumana;
 
@@ -98,6 +100,40 @@ public class OperadorRedOferta implements Oferente {
 
 	@Override
 	public void addExperiencia(Experiencia exp) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void setActividadVigente(SistemaActividadHumana nuevaactividad) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void recibirMensaje(MensajeACL mssg) {
+		// TODO Auto-generated method stub
+		
+	}
+	@Override
+	public String printActividadVigente(){
+		return null;
+	}
+
+	@Override
+	public Dinero getDinero() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void setUltimaUtilidadObtenida(Double ultimaUtilidadObtenida) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void atenderMensajes() {
 		// TODO Auto-generated method stub
 		
 	}

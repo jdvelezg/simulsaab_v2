@@ -5,7 +5,10 @@ package simulaSAAB.agentes;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 import bsh.This;
 import repast.simphony.engine.schedule.ScheduledMethod;
@@ -14,10 +17,14 @@ import simulaSAAB.comunicacion.Dinero;
 import simulaSAAB.comunicacion.Experiencia;
 import simulaSAAB.comunicacion.MensajeACL;
 import simulaSAAB.comunicacion.Oferta;
+import simulaSAAB.comunicacion.OrdenDeCompra;
+import simulaSAAB.comunicacion.OrdenDePedido;
+import simulaSAAB.comunicacion.OrdenDeServicio;
 import simulaSAAB.comunicacion.Preposicion;
 import simulaSAAB.comunicacion.Producto;
 import simulaSAAB.comunicacion.Proposito;
 import simulaSAAB.comunicacion.EjecutarAccionConProposito;
+import simulaSAAB.comunicacion.Recurso;
 import simulaSAAB.contextos.PlazaDistrital;
 import simulaSAAB.global.PropositosFactory;
 import simulaSAAB.inteligencia.Cerebro;
@@ -34,7 +41,7 @@ public class VendedorFinal implements AgenteInteligente, Demandante {
 	
 	public static String ROL ="vendedor";
 	
-	public static String INTENCION ="comprar al pormayor y vender al pormenor";
+	public static String INTENCION ="vender";
 	
 	private static String OBJETIVO;
 	
@@ -50,13 +57,17 @@ public class VendedorFinal implements AgenteInteligente, Demandante {
 	
 	private Queue<MensajeACL> MensajesRecibidos;
 	
+	protected Queue<OrdenDePedido> pedidosRecibidos;
+	
+	private Map<Integer, Queue<MensajeACL>> MensajesEnviados;
+	
 	private boolean MensajeAceptado;
 	
 	private List<Experiencia> Experiencia;
 	
 	private List<Tienda> Tiendas;
 	
-	private PlazaDistrital puntoDemanda;
+	protected PlazaDistrital puntoDemanda;
 	
 	private List<Demanda> Demandas;
 	
@@ -71,6 +82,8 @@ public class VendedorFinal implements AgenteInteligente, Demandante {
 	private Double UltimaUtilidadObtenida;
 	
 	private String Estado;
+	
+	private boolean intencionDeConsolidacion;
 	
 	/**
 	 * Constructor
@@ -92,6 +105,11 @@ public class VendedorFinal implements AgenteInteligente, Demandante {
 		UltimaUtilidadObtenida 	= new Double(0);
 		MayorUtilidadObtenida	= new Double(0);	
 		
+		pedidosRecibidos	= new ConcurrentLinkedDeque<OrdenDePedido>();
+		
+		MensajesEnviados	= new ConcurrentHashMap<Integer, Queue<MensajeACL>>();
+		MensajesRecibidos	= new ConcurrentLinkedDeque<MensajeACL>();
+		
 		Estado 	= "IDLE";
 	}
 
@@ -101,7 +119,7 @@ public class VendedorFinal implements AgenteInteligente, Demandante {
 	 * Primero verifica que el agente no tenga ningun mensaje pendiente a procesar.
 	 * Luego ejecuta el proceso humano definido para un agente humano activo en el mundo
 	 */
-	@ScheduledMethod (start = 1, interval = 1)
+	@ScheduledMethod (start = 10, interval = 1)
 	public void step () {
 		
 		if(ProcesoHumanoDefinido.getEstado().equalsIgnoreCase(EstadosActividad.READY.toString()) && this.MensajesRecibidos.size()>0){
@@ -126,12 +144,16 @@ public class VendedorFinal implements AgenteInteligente, Demandante {
 		for(Tienda local : Tiendas){
 			
 			List<SistemaActividadHumana> actividadesAmbientales = local.getAmbiente().getActividadesViables();
+			ProductosViablesPercibidos.addAll(local.getAmbiente().getProductosAgricolasViables());
+			
+			if(this.PropositoVigente==null)
+				formarIntenciones();
 			
 			//Filtra su proposito
 			for(SistemaActividadHumana a: actividadesAmbientales){
 				
 				if(a.getProposito().compare(PropositoVigente))
-					this.ActividadesEjecutables.add(a);				
+					this.ActividadesEjecutables.add(a.getInstance());				
 			}		
 		}	
 	}
@@ -139,25 +161,28 @@ public class VendedorFinal implements AgenteInteligente, Demandante {
 	@Override
 	public void formarIntenciones() {
 		
-		this.PropositoVigente = new PropositosFactory(this.ROL,this.INTENCION).getProposito();
-		
+		if(PropositoVigente==null)
+			this.PropositoVigente = new PropositosFactory(this.ROL,this.INTENCION).getProposito();		
 	}
 
 	@Override
 	public void tomarDecisiones() {
-		// TODO Auto-generated method stub
-		this.ActividadVigente = CerebroVendedor.tomarDecision(ActividadesEjecutables);	
+		
+		if(ActividadesEjecutables.size()>0)
+			this.ActividadVigente = CerebroVendedor.tomarDecision(ActividadesEjecutables);
+		else
+			System.out.println("Imposible tomar decision, No actividad viable size: "+ ActividadesEjecutables.size());
 	}
 
 	@Override
 	public void actuar() {
-		// TODO Auto-generated method stub
+	
 		ActividadVigente.secuenciaPrincipalDeAcciones(this);
 	}
 
 	@Override
 	public void juzgarMundoSegunEstandares() {
-		// TODO Auto-generated method stub
+
 		Experiencia exp = CerebroVendedor.evaluarExperiencia();		
 		if(!Experiencia.contains(exp)){			
 			this.addExperiencia(exp);
@@ -166,9 +191,22 @@ public class VendedorFinal implements AgenteInteligente, Demandante {
 	
 	@Override
 	public Demanda generarDemanda() {
-		// TODO Auto-generated method stub
 		
-		return null;
+		/**
+		 * Obtiene el primer producto de la lista de productos percibidos y genera una demanda. 
+		 * Para calcular la cantidad estimada de producto demandado, divide su dinero por el valor registrado del producto
+		 * 
+		 * TODO cuando existan varios productos en el ambiente, debe escoger o iterar los productos que va a demandar
+		 */
+		Producto producto 	= ProductosViablesPercibidos.get(0);		
+		Double cantidad		= Math.floor(Dinero.getCantidad()/producto.getPrecioEnMercado());
+		
+		Demanda novaDemanda = new Demanda(producto.getNombre(),cantidad,192,false);//192ciclos -> 8 dias
+		novaDemanda.setPuntoDemanda(puntoDemanda);
+		novaDemanda.setComprador(this);
+		this.Demandas.add(novaDemanda);
+		
+		return novaDemanda;
 	}
 
 	@Override
@@ -178,25 +216,37 @@ public class VendedorFinal implements AgenteInteligente, Demandante {
 	}
 	
 	@Override
-	public boolean intencionDeConsolidacion() {
-		// TODO Auto-generated method stub
-		return false;
+	public boolean intencionDeConsolidacion() {		
+		return intencionDeConsolidacion;
 	}
 
 
 	@Override
-	public void setIntencionConsolidacion(boolean bool) {
-		// TODO Auto-generated method stub
-		
+	public void setIntencionConsolidacion(boolean bool) {		
+		intencionDeConsolidacion = bool;		
 	}
 	
 	@Override
 	public synchronized void recibirMensaje(MensajeACL mssg) {
 		
-		this.MensajesRecibidos.offer(mssg);		
+		Integer MensajeID 	= mssg.getConversationID();
+		
+		//Si es una respuesta a un mensaje enviado
+		if(MensajesEnviados.containsKey(MensajeID)){
+			
+			Queue mensajes = MensajesEnviados.get(MensajeID);
+			mensajes.offer(mssg);	
+			
+		}else{
+			
+			if(MensajesRecibidos == null){
+				this.MensajesRecibidos = new ConcurrentLinkedDeque();
+			}
+			this.MensajesRecibidos.offer(mssg);
+		}	
 	}
 	
-	private void atenderMensajes(){
+	public void atenderMensajes() throws NullPointerException{
 		
 		MensajeACL mensaje = this.MensajesRecibidos.poll();		
 		
@@ -223,16 +273,40 @@ public class VendedorFinal implements AgenteInteligente, Demandante {
 					this.ProcesoHumanoDefinido.setPaso(3);
 					
 				}else{
-					rejectMessaje(mensaje);
+					rejectMessage(mensaje);
 				}
 			}
 			
+		}else if(mensaje.getPerformative().equalsIgnoreCase("reject-proposal")){
+			//No hace nada
+		}else if(mensaje.getPerformative().equalsIgnoreCase("accept-proposal")){
+			
+			Preposicion contenido = mensaje.getContent();
+			/**
+			 * Evalua si el mensaje si es una aceptacion de consolidacion
+			 * TODO evaluar otras accept-proposal 
+			 */
+			if(contenido instanceof EjecutarAccionConProposito){
+				
+				EjecutarAccionConProposito proposal = (EjecutarAccionConProposito) contenido;
+				SistemaActividadHumana actividad	= proposal.getActividad();
+				
+				if(actividad instanceof ConsolidarDemanda){
+					/**
+					 * Se incluye en la nutrired.
+					 * 
+					 * Es valido mientras el sistema de actividad 'conformarNutrired' no posea pasos secuenciales de lo contrario
+					 * TODO se debe generar la inclusion a la nutrired con un iterador
+					 *  
+					 */
+					actividad.secuenciaPrincipalDeAcciones(this);
+				}						
+			}
+			
 		}else{			
-			rejectMessaje(mensaje);
+			rejectMessage(mensaje);			
 		}
-		
-		
-		
+		//TODO agregar procesamiento de otras preformativas cfp-inform.. etc		
 	}
 	
 	/**
@@ -242,14 +316,16 @@ public class VendedorFinal implements AgenteInteligente, Demandante {
 	 * @return
 	 * 		Mensaje ACL
 	 */
-	private MensajeACL rejectMessaje(MensajeACL mensaje){
+	private MensajeACL rejectMessage(MensajeACL mensaje){
 		
 		MensajeACL respuesta = new MensajeACL(mensaje.getConversationID());
 		
 		respuesta.setContent(mensaje.getContent());
 		respuesta.setInReply_to(mensaje.getConversationID());
-		respuesta.setPerformative("reject-proposal");
 		respuesta.setSender(this);
+		
+		String performative = mensaje.getPerformative().equalsIgnoreCase("propose")?"reject-proposal":"refuse";
+		respuesta.setPerformative(performative);
 		
 		AgenteInteligente sender = mensaje.getReply_to();
 		sender.recibirMensaje(respuesta);
@@ -259,7 +335,53 @@ public class VendedorFinal implements AgenteInteligente, Demandante {
 		return respuesta;
 	}
 	
+	/**
+	 * Recibe un pedido despachado en servicio logistico
+	 */
+	public synchronized void recibirPedido(OrdenDePedido pedido){
+		pedidosRecibidos.offer(pedido);
+		//actualiza obervador
+		pedido.OBSERVABLE.PedidoEntregado();
+	}
+	
+	@Override
+	public boolean pedidosRecibidos(){
+		return !this.pedidosRecibidos.isEmpty();
+	}
+	
+	@Override
+	public void gestionarPedidos() {
+		
+		while(!(pedidosRecibidos.isEmpty())){
+			
+			List<OrdenDeCompra> ordenes = pedidosRecibidos.poll().getOrdenesDeCompra();
+			
+			
+			
+			for(OrdenDeCompra compra: ordenes){
+				
+				distribuirProductosEnTienda(compra.getOferta().getProductos());
+			}			
+		}		
+	}
+	
+	/**
+	 * Almacena los productos comprados en las tiendas para su venta
+	 * @param productos
+	 */
+	public void distribuirProductosEnTienda(Recurso productos){
+		
+		//TODO cambiar si el agente tiene mas de una tienda
+		Tienda tienda = this.Tiendas.get(0);
+		tienda.AlmacenarProductos(productos);		
+	}
+	
 	/**getter - setters **/
+	
+	@Override
+	public void setActividadVigente(SistemaActividadHumana nuevaactividad) {
+		this.ActividadVigente = nuevaactividad;		
+	}
 	
 	@Override
 	public String getEstado() {
@@ -274,7 +396,12 @@ public class VendedorFinal implements AgenteInteligente, Demandante {
 		
 		return this.Experiencia;
 	}
-
+	
+	@Override
+	public void setUltimaUtilidadObtenida(Double ultimaUtilidadObtenida){
+		this.UltimaUtilidadObtenida = ultimaUtilidadObtenida;
+	}
+	
 	@Override
 	public Double getMayorUtilidadObtenida() {
 		// TODO Auto-generated method stub
@@ -328,6 +455,10 @@ public class VendedorFinal implements AgenteInteligente, Demandante {
 	public void setDinero(simulaSAAB.comunicacion.Dinero dinero) {
 		Dinero = dinero;
 	}
+	
+	public void addDinero(Double dinero) {
+		Dinero.addCantidad(dinero);
+	}
 
 
 	public List<Tienda> getTiendas() {
@@ -351,6 +482,11 @@ public class VendedorFinal implements AgenteInteligente, Demandante {
 
 	public void setPuntoDemanda(PlazaDistrital puntoDemanda) {
 		this.puntoDemanda = puntoDemanda;
+	}
+	
+	@Override
+	public String printActividadVigente(){
+		return this.ActividadVigente.toString();
 	}
 
 }

@@ -20,17 +20,26 @@ public class PropositosFactory {
 	 */
 	public PropositosFactory(String rol, String Intencion) {
 		
-		if(rol.compareToIgnoreCase("productor")==0){
+		if(rol.compareToIgnoreCase("productor")==0 && Intencion.compareToIgnoreCase("producir")==0){
 			
 			Proposito = new Proposito("Producir cebolla y vender el producto");
 			
-		}else if(rol.compareToIgnoreCase("vendedor")==0){
+		}
+		else if(rol.compareToIgnoreCase("productor")==0 && Intencion.compareToIgnoreCase("vender")==0){
 			
-			Proposito = new Proposito("Comprar cebolla y venderla al detal");
+			Proposito = new Proposito("Vender productos");
 			
-		}else if(rol.compareToIgnoreCase("consumidor")==0){
+		}else if(rol.compareToIgnoreCase("vendedor")==0 && Intencion.compareToIgnoreCase("vender")==0){
 			
-			Proposito = new Proposito("Comprar cebolla en la tienda mas cercana");
+			Proposito = new Proposito("Comprar para vender productos");
+			
+		}else if(rol.compareToIgnoreCase("vendedor")==0 && Intencion.compareToIgnoreCase("comprar")==0){
+			
+			Proposito = new Proposito("Comprar para vender productos");
+		}
+		else if(rol.compareToIgnoreCase("consumidor")==0){
+			
+			Proposito = new Proposito("Comprar productos");
 		}
 	}
 	

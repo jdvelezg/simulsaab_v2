@@ -24,7 +24,7 @@ public class Recurso implements Concepto {
 	public Recurso(Producto prod, double cant){
 		
 		Producto = prod;
-		Cantidad = new Double(cant);		
+		Cantidad = cant;		
 	}
 	
 	/**

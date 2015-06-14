@@ -15,10 +15,7 @@ import com.vividsolutions.jts.geom.Point;
  */
 public class CentroUrbano extends AmbienteLocal {
 	
-	private String Nombre;
-	
-	private Geometry Geometria;
-	
+		
 	private Coordinate roadAccess;
 	
 	private AmbienteLocal municipio;
@@ -29,30 +26,15 @@ public class CentroUrbano extends AmbienteLocal {
 	 * 
 	 */
 	public CentroUrbano() {
-		// TODO Auto-generated constructor stub
+		super();
 	}
 	
 	public CentroUrbano(String nombre){
-		this.Nombre=nombre;
-	}
-	
-	@Override
-	public void setGeometria(Geometry g){
-		this.Geometria=g;
-	}
-	
-	@Override
-	public Geometry getGeometria(){
-		
-		return this.Geometria;
-	}
-	@Override
-	public String getNombre(){
-		return this.Nombre;
-	}
+		super(nombre);		
+	}		
 	
 	public Point getCentroid(){
-		return this.Geometria.getCentroid();
+		return this.getGeometria().getCentroid();
 	}
 
 	public Coordinate getRoadAccess() {
@@ -63,21 +45,12 @@ public class CentroUrbano extends AmbienteLocal {
 		this.roadAccess = roadAccess;
 	}
 
-	public void setNombre(String nombre) {
-		Nombre = nombre;
-	}
-
 	public AmbienteLocal getMunicipio() {
 		return municipio;
 	}
 
 	public void setMunicipio(AmbienteLocal municipio) {
 		this.municipio = municipio;
-	}
-	
-	@Override
-	public List<NodoSaab> getNodosSaab() {
-		return this.municipio.getNodosSaab();
 	}
 	
 

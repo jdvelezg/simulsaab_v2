@@ -66,6 +66,7 @@ public class Route {
 		this.currentPosition= 0;
 		this.totalLenght	= new Double(0);
 		this.routeX			= new ArrayList<Coordinate>();
+		Forward				= true;
 		
 	}
 	
@@ -85,28 +86,26 @@ public class Route {
 	 */
 	public Double setRoute() throws Exception {
 		
-		ShortestPath path 				= new ShortestPath(SaabContextBuilder.RoadNetwork);
+		ShortestPath<Junction> path 	= new ShortestPath<Junction>(SaabContextBuilder.RoadNetwork);
 		List<RepastEdge<Junction>> ruta	= new ArrayList<RepastEdge<Junction>>();
 		
-		if(SaabContextBuilder.coordMap.containsKey(this.origin) && SaabContextBuilder.coordMap.containsKey(this.destination)){
+		if(SaabContextBuilder.coordMap.containsKey(origin) && SaabContextBuilder.coordMap.containsKey(destination)){
 			
-			Junction Inicio	= SaabContextBuilder.coordMap.get(this.origin);
-			Junction Final	= SaabContextBuilder.coordMap.get(this.destination);
+			Junction Inicio	= SaabContextBuilder.coordMap.get(origin);
+			Junction Final	= SaabContextBuilder.coordMap.get(destination);
 			
 			ruta = path.getPath(Inicio, Final);
 			
 			totalLenght = path.getPathLength(Inicio, Final);
-			
 		}else{
-			throw new Exception("El origen-destino no esta mapeado en las vias del modelo");
+			throw new Exception("El origen  destino no esta mapeado en las vias del modelo");
 		}
 		
 		for(RepastEdge<Junction> edge:ruta){
 			
 			NetworkEdge<Junction> roadedge = (NetworkEdge<Junction>)edge;
-			this.routeX.addAll(Arrays.asList(roadedge.getRoad().getCoordinates()));			
+			this.routeX.addAll(Arrays.asList(roadedge.getRoad().getCoordinates()));	
 		}
-		
 		return totalLenght;
 	}
 	
@@ -124,19 +123,19 @@ public class Route {
 	 */
 	public Coordinate nextStep(){
 		
-		Coordinate paso = this.routeX.get(this.currentPosition);
-		if(!(this.destination.equals(paso)) && this.Forward){
+		Coordinate paso = routeX.get(currentPosition);
+		if(!(destination.equals(paso)) && Forward){
 			
-			this.currentPosition++;
+			currentPosition = (currentPosition+10)>(routeX.size()-1)?routeX.size()-1:currentPosition+10;
 			
-		}else if(!(this.origin.equals(paso)) && !(this.Forward)){
+		}else if(!(origin.equals(paso)) && !(Forward)){
 			
-			this.currentPosition--;
+			currentPosition = (currentPosition-10)<0?0:currentPosition-10;
 		}else{
 			LOGGER.info("Ya esta en el destino");
 		}
 		
-		return this.routeX.get(this.currentPosition);
+		return this.routeX.get(currentPosition);
 	}
 	
 	

@@ -41,6 +41,7 @@ public interface AgenteInteligente {
 	 * IDLE
 	 * READY
 	 * RUNNING
+	 * WAITING
 	 */
 	String getEstado();
 	
@@ -50,13 +51,19 @@ public interface AgenteInteligente {
 	 * IDLE
 	 * READY
 	 * RUNNING
+	 * WAITING
 	 */
 	void setEstado(String Estado);
 	
 	/**
+	 * Cambia la actividad vigente del agente arbitrariamente
+	 */
+	void setActividadVigente(SistemaActividadHumana nuevaactividad);
+	
+	/**
 	 * Devuelve un array con las experiencias acumuladas por el agente
 	 * @return
-	 */
+	 */	
 	List<Experiencia> getExperiencia();
 	
 	/**
@@ -83,6 +90,19 @@ public interface AgenteInteligente {
 	SistemaActividadHumana getActividadVigente();
 	
 	/**
+	 * Devuelve el nombre del MPA fijado como vigente
+	 */
+	String printActividadVigente();
+	
+	/**
+	 * Fija la ultima utilidad obtenida del agente.
+	 * Al finalizar la ejecución de un MPA, se calcula la utilidad obtenida y 
+	 * se fija el valor para ser usado en la evaluación de la experiencia del agente
+	 * @param ultimaUtilidadObtenida
+	 */
+	void setUltimaUtilidadObtenida(Double ultimaUtilidadObtenida);
+	
+	/**
 	 * Devuelve la ultima utilidad obtenida por el agente
 	 * @return Double ultima utilidad obtenida
 	 */
@@ -98,5 +118,10 @@ public interface AgenteInteligente {
 	 * Recibe mensajes ACL, y los guarda en una cola para ser posteriormente atendidos
 	 */
 	void recibirMensaje(MensajeACL mssg);
+	
+	/**
+	 * Atiende los mensajes que dejo en cola
+	 */
+	void atenderMensajes();
 
 }

@@ -28,6 +28,14 @@ public class Dinero implements Concepto {
 	public void setCantidad(double cantidad) {
 		Cantidad = cantidad;
 	}
+	
+	public void addCantidad(double cantidad) {
+		Cantidad += cantidad;
+	}
+	
+	public void subtractCantidad(double cantidad) {
+		Cantidad -= cantidad;
+	}
 
 	public String getMoneda() {
 		return Moneda;

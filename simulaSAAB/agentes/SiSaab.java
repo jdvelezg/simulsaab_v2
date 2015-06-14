@@ -7,12 +7,19 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import bsh.This;
 import repast.simphony.context.Context;
+import repast.simphony.engine.environment.RunEnvironment;
+import repast.simphony.engine.schedule.ISchedule;
+import repast.simphony.engine.schedule.Schedule;
+import repast.simphony.engine.schedule.ScheduleParameters;
 import repast.simphony.space.graph.Network;
 import repast.simphony.util.collections.IndexedIterable;
 import simulaSAAB.comunicacion.Demanda;
+import simulaSAAB.comunicacion.Dinero;
 import simulaSAAB.comunicacion.Oferta;
 import simulaSAAB.comunicacion.OrdenDeCompra;
 import simulaSAAB.comunicacion.OrdenDePedido;
@@ -24,24 +31,13 @@ import simulaSAAB.contextos.SaabContextBuilder;
 
 public abstract class SiSaab implements AgenteReactivo {
 	
-	/**
-	 * Referencia interna a los contextos propios del SISAAB
-	 */
-	private static final Context<Object> SISAABContext 		= SaabContextBuilder.SISAABContext;
+	private static Logger LOGGER = Logger.getLogger(SiSaab.class.getName());
 	
-	private static final Network<Object> SISAABNetwork 		= SaabContextBuilder.SISAABNetwork;
 	
-	private static final Context<Object> ComercialContext 	= SaabContextBuilder.ComercialContext;
-	
-	private static final Network<Object> ComercialNetwork 	= SaabContextBuilder.ComercialNetwork;
-	
-	private static final Context<Object> TransaccionContext = SaabContextBuilder.TransaccionContext;
-	
-	private static final Context<Object> OrdenesContext		= SaabContextBuilder.OrdenesContext;
 	
 	
 	/**
-	 * Genera orden de pedido que relacina una oferta con una demanda y calcula los costos logísticos asociados al mismo
+	 * Genera orden de pedido que relaciona una oferta con una demanda y calcula los costos logísticos asociados al mismo
 	 * implica la generación de una orden de servicio logistico y una orden de compra 
 	 * 
 	 * @param oferta Objeto Oferta relacionado en la orden de pedido
@@ -55,7 +51,7 @@ public abstract class SiSaab implements AgenteReactivo {
 		OrdenDePedido ordenPedido = new OrdenDePedido(demanda, ordenescompra, ordenesservicio);
 		
 		//Guarda la orden de pedido en el contexto de Ordenes, para que se atendida por un agente OperadorLogistico
-		OrdenesContext.add(ordenPedido);
+		SaabContextBuilder.OrdenesContext.add(ordenPedido);
 	}
 	
 	/**
@@ -66,8 +62,8 @@ public abstract class SiSaab implements AgenteReactivo {
 	 */
 	private static OrdenDeServicio generarOrdenDeServicioLogistico(CentroUrbano puntoOferta, List<Oferta> ofertas, Demanda demanda){
 		
-		OrdenDeServicio servicioLogistico = new OrdenDeServicio(puntoOferta, ofertas, demanda);
-		
+		OrdenDeServicio servicioLogistico = new OrdenDeServicio(puntoOferta, ofertas, demanda);		
+		SaabContextBuilder.OrdenesContext.add(servicioLogistico);
 		
 		return servicioLogistico;
 	}
@@ -82,10 +78,12 @@ public abstract class SiSaab implements AgenteReactivo {
 		
 		OrdenDeCompra orden = new OrdenDeCompra(oferta,demanda);
 		//la extrae del contexto comercial y la registra en el contexto de transacciones.
-		ComercialContext.remove(oferta);
-		TransaccionContext.add(oferta);
+		SaabContextBuilder.ComercialContext.remove(oferta);
+		SaabContextBuilder.TransaccionContext.add(oferta);
 		//crea un edge para representar la oferta
-		ComercialNetwork.addEdge(oferta,demanda,oferta.getPrecio());
+		SaabContextBuilder.ComercialNetwork.addEdge(oferta,demanda,oferta.getPrecio());
+		//actualzia observadores de la orden
+		orden.OBSERVABLE.pagoAcordado();
 		
 		return orden;
 	}
@@ -96,8 +94,19 @@ public abstract class SiSaab implements AgenteReactivo {
 	 */
 	public synchronized static void registrarOferta(Oferta oferta){
 		
-		ComercialContext.add(oferta);
+		SaabContextBuilder.ComercialContext.add(oferta);
 		oferta.setVigente();
+		/*
+		 * Crea un objeto Schedule y agrega el objeto para que su metodo step sea ejecutado 
+		 * en cada tick de la simulación
+		 */
+		double tick = RunEnvironment.getInstance().getCurrentSchedule().getTickCount();
+		double start = tick < 1 ? 1 : tick + 2;
+		int interval = 1;
+		
+		ScheduleParameters params = ScheduleParameters.createRepeating(start,interval);
+		ISchedule sch = RunEnvironment.getInstance().getCurrentSchedule();
+		sch.schedule(params, oferta, "step");
 	}
 	
 	/**
@@ -106,8 +115,19 @@ public abstract class SiSaab implements AgenteReactivo {
 	 */
 	public synchronized static void registrarDemanda(Demanda demanda){
 		
-		ComercialContext.add(demanda);
+		SaabContextBuilder.ComercialContext.add(demanda);
 		demanda.setVigente();
+		/*
+		 * Crea un objeto Schedule y agrega el objeto para que su metodo step sea ejecutado 
+		 * en cada tick de la simulación
+		 */
+		double tick = RunEnvironment.getInstance().getCurrentSchedule().getTickCount();
+		double start = tick < 1 ? 1 : tick + 2;
+		int interval = 1;
+		
+		ScheduleParameters params = ScheduleParameters.createRepeating(start,interval);
+		ISchedule sch = RunEnvironment.getInstance().getCurrentSchedule();
+		sch.schedule(params, demanda, "step");
 	}
 	
 	/**
@@ -119,39 +139,52 @@ public abstract class SiSaab implements AgenteReactivo {
 		
 		//Obtiene ofertas registradas
 		List<Oferta> ofertas 			= new ArrayList<Oferta>();				
-		IndexedIterable<Object> offers 	= ComercialContext.getObjects(Oferta.class);
-		
+		IndexedIterable<Object> offers 	= SaabContextBuilder.ComercialContext.getObjects(Oferta.class);
+	
 		//filtra ofertas de interés para la demanda
 		for(int i=0; i<offers.size();i++){
 			
 			Oferta o = (Oferta)offers.get(i);
 			
-			if(o.getProducto().equals(producto))
-				ofertas.add(o);
+			if(o.getProducto().getNombre().equalsIgnoreCase(producto))
+				ofertas.add(o); 
 		}//end for
-		
+	
 		return ofertas;
 	}
 	
 	/**
 	 * Permite la compra de productos relacionando una oferta y una demanda registrada
-	 * @param offer Oferta relacinada en la compra
-	 * @param demand Demanda relacionada en la compra
+	 * @param offer Ofertas relacionada en la compra
+	 * @param demanda Demanda relacionada en la compra
 	 */
 	public synchronized static void realizarCompra(List<Oferta> offer, Demanda demanda){
 		
 		Map<CentroUrbano,List<Oferta>> OfertasMap	= new ConcurrentHashMap<CentroUrbano,List<Oferta>>();
 		List<OrdenDeCompra> ordenesCompra			= new ArrayList<OrdenDeCompra>();
 		List<OrdenDeServicio> ordenesServicio		= new ArrayList<OrdenDeServicio>();
+		Demandante demandante						= demanda.getComprador();
+		Dinero dineroDemandante						= demandante.getDinero();
 		
 		for(Oferta of: offer){
 			
-			//confirma la oferta como vendida.
-			of.vendida();
-			//genera una orden de compra 			
-			ordenesCompra.add(generarOrdenDeCompra(of,demanda));
+			//realiza la transacción comercial entre el oferente y el demandante
+			Dinero dinerOferente 	= of.getVendedor().getDinero();
+			Double monto 			= new Double(of.getPrecio());
 			
-			//Organiza por punto de Oferta
+			dineroDemandante.subtractCantidad(monto);
+			dinerOferente.addCantidad(monto);			
+			//confirma la oferta como vendida.
+			of.setVendida();
+			
+			//genera una orden de compra por cada Oferta			
+			ordenesCompra.add(generarOrdenDeCompra(of,demanda));			
+			/*
+			 * Organiza por punto de Oferta
+			 * El punto de oferta es genérico, referencia el centro urbano
+			 * 
+			 * TODO los puntos de oferta deben ser las fincas registradas en el SISAAB
+			 */
 			if(!OfertasMap.containsKey(of.getPuntoOferta())){
 				
 				ArrayList<Oferta> value = new ArrayList<Oferta>();
@@ -170,15 +203,14 @@ public abstract class SiSaab implements AgenteReactivo {
 		Iterator<CentroUrbano> iter = OfertasMap.keySet().iterator();
 		while(iter.hasNext()){			
 			
-			CentroUrbano puntoOferta = iter.next();
+			CentroUrbano puntoOferta 	= iter.next();
 			ordenesServicio.add(generarOrdenDeServicioLogistico(puntoOferta, OfertasMap.get(puntoOferta), demanda));
 			
 		}
 				
 		//Genera Orden de pedido Unitaria
 		generarOrdenDePedido(demanda, ordenesCompra, ordenesServicio);
-	}	
-	
+	}
 	
 
 }

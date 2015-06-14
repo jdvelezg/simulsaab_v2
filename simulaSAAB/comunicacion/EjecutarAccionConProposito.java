@@ -9,6 +9,11 @@ public class EjecutarAccionConProposito implements Preposicion {
 	public EjecutarAccionConProposito() {
 		// TODO Auto-generated constructor stub
 	}
+	
+	public EjecutarAccionConProposito(SistemaActividadHumana act) {
+		
+		this.actividad = act;
+	}
 
 	public SistemaActividadHumana getActividad() {
 		return actividad;

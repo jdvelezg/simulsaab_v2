@@ -29,17 +29,18 @@ public class ProductoConfigurado{
 	 * Constructor
 	 */
 	public ProductoConfigurado(String nombre){
-		
+	//(Fuente: EVALUACIONES AGROPECUARIAS 2010 - DEPARTAMENTO DE CUNDINAMARCA)
 		this.id							=1;
 		this.nombre						="Cebolla de Bulbo";
 		this.tipo						="Agrícola";
 		this.MinPisoTermico				="2000";
 		this.MaxPisoTermico				="2800";
-		this.costoproduccionhectarea	=10280013.00;
-		this.rendimientohectarea		=16500.00;
+		this.costoproduccionhectarea	=9139200.0;//$/h.
+		this.rendimientohectarea		=15000.0;//15 t./h. 
 		this.unidadmedida				="kilogramo";
-		this.UtilidadRegistrada			=500;
-		this.precioSIPSA				=1400;
+		this.UtilidadRegistrada			=6887550;//-$/h.
+		this.precioSIPSA				=922.22;//-$/Kg(FUENTE SIPSA)
+		//preciopagadoproductor			=1068450;//-$/t.
 		
 	}
 

@@ -21,7 +21,7 @@ public class Experiencia implements Concepto {
 	
 	//private int PuntajeUtilidad;
 	
-	private Chromosome Cromosoma;
+	private MPAGene MPAExperienceGene;
 	
 
 	public Experiencia() {
@@ -34,12 +34,7 @@ public class Experiencia implements Concepto {
 		this.UtilidadObtenida	= utilidad;
 		this.NumeroEjecuciones	= 1;
 		
-		MPAGene gen1 	= new MPAGene(act,utilidad,NumeroEjecuciones, NumeroEjecucionesExitosas);		
-		
-		Gene[] Genes = new Gene[1];		
-		Genes[0] = gen1;
-		
-		this.Cromosoma = new Chromosome(Genes);
+		MPAExperienceGene 	= new MPAGene(act,utilidad,NumeroEjecuciones, NumeroEjecucionesExitosas);
 	}
 
 
@@ -62,7 +57,7 @@ public class Experiencia implements Concepto {
 		
 		ActividadEjecutada = actividadEjecutada;
 		if(this.UtilidadObtenida!=null){
-			setChromosome();
+			setGene();
 		}
 	}
 
@@ -74,12 +69,12 @@ public class Experiencia implements Concepto {
 		
 		UtilidadObtenida = utilidadObtenida;
 		if(this.ActividadEjecutada!=null){
-			setChromosome();
+			setGene();
 		}
 	}
 
-	public Chromosome getCromosoma() {
-		return Cromosoma;
+	public Gene getGene() {
+		return MPAExperienceGene;
 	}	
 	
 	public int getNumeroEjecucionesExitosas() {
@@ -93,17 +88,10 @@ public class Experiencia implements Concepto {
 	/**
 	 * Crea el cromosoma usable en el GA, en caso de no haber sido inicializado
 	 */
-	private void setChromosome(){
-		 if(this.Cromosoma==null){
-			 
-			 MPAGene gen1 	= new MPAGene(this.ActividadEjecutada,this.UtilidadObtenida, this.NumeroEjecuciones, this.NumeroEjecucionesExitosas);			 
-			 Gene[] Genes = new Gene[1];
-			 Genes[0] = gen1;			 
-			 this.Cromosoma = new Chromosome(Genes);
-		 }else{
-			 
-		 }
-		 
+	private void setGene(){
+		 if(this.MPAExperienceGene==null){			 
+			 MPAExperienceGene 	= new MPAGene(this.ActividadEjecutada,this.UtilidadObtenida, this.NumeroEjecuciones, this.NumeroEjecucionesExitosas);		 
+		 }		 
 	 }
 	
 	/**

@@ -10,7 +10,7 @@ import simulaSAAB.contextos.GeografiaFija;
 
 public class Terreno implements GeografiaFija {
 	
-	private double Hecatreas;
+	private double Hectareas;
 	
 	private Geometry Geometria;
 	
@@ -31,7 +31,7 @@ public class Terreno implements GeografiaFija {
 	 * @param geom Punto geometrico del terreno
 	 */
 	public Terreno(double hect, Geometry geom){
-		this.Hecatreas	=hect;
+		this.Hectareas	=hect;
 		this.Geometria	=geom;
 	}
 	
@@ -45,8 +45,7 @@ public class Terreno implements GeografiaFija {
 	 */
 	public Recurso cosechar(Producto p){
 		
-		double cantidad = (p.getPromRendimientoHectarea()*RandomHelper.nextDoubleFromTo(0, 1.25))*this.Hecatreas;	
-		
+		double cantidad = Math.floor((p.getPromRendimientoHectarea()*RandomHelper.nextDoubleFromTo(1, 1.25))*this.Hectareas);	
 		return new Recurso(p,cantidad);
 	}
 	
@@ -73,12 +72,12 @@ public class Terreno implements GeografiaFija {
 		
 	}
 
-	public double getHecatreas() {
-		return Hecatreas;
+	public double getHectareas() {
+		return Hectareas;
 	}
 
-	public void setHecatreas(double hecatreas) {
-		Hecatreas = hecatreas;
+	public void setHectareas(double hecatreas) {
+		Hectareas = hecatreas;
 	}
 
 	public String getEstado() {

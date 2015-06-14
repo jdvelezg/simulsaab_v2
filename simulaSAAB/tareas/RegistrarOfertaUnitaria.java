@@ -1,5 +1,6 @@
 package simulaSAAB.tareas;
 
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import repast.simphony.engine.environment.RunEnvironment;
@@ -22,11 +23,13 @@ public class RegistrarOfertaUnitaria implements
 	
 	private static Logger LOGGER = Logger.getLogger(RegistrarOfertaUnitaria.class.getName());
 	
-	private static Proposito proposito = new Proposito("Registrar oferta de productos en el SISAAB");
+	private static Proposito proposito = new Proposito("Vender productos");
 	
 	private static String Enunciado;
 	
 	private double CostoEjecucion;
+	
+	private double DineroInicial;
 	
 	private Oferta Oferta;	
 	
@@ -38,14 +41,12 @@ public class RegistrarOfertaUnitaria implements
 	
 
 	public RegistrarOfertaUnitaria() {
-		// TODO Auto-generated constructor stub
 		
 		MPAConfigurado mpa 	=new MPAConfigurado("RegistrarOfertaUnitaria");
 		
 		this.id				= mpa.getId();
 		this.Enunciado		= mpa.getEnunciado();
-		this.proposito 		= mpa.getProposito();
-		this.CostoEjecucion	= mpa.getCosto();
+		this.CostoEjecucion	= mpa.getCosto();		
 				
 		this.Estado = EstadosActividad.READY.toString();
 	}
@@ -53,13 +54,11 @@ public class RegistrarOfertaUnitaria implements
 	@Override
 	public void secuenciaPrincipalDeAcciones(Oferente actor) {
 		
-		//obtiene la oferta del agente
-		this.Oferta = actor.generarOferta();
-		
 		if(this.Estado.equalsIgnoreCase(EstadosActividad.READY.toString())){
 			
 			this.Estado	= EstadosActividad.RUNNING.toString();
 			actor.setEstado("RUNNING");
+			DineroInicial = new Double(actor.getDinero().getCantidad());
 			this.paso	= 1;
 			
 		}
@@ -67,13 +66,26 @@ public class RegistrarOfertaUnitaria implements
 			
 			switch(this.paso){
 			case 1:
-							
+				
+				//obtiene la oferta del agente
+				this.Oferta = actor.generarOferta();
+				
 				//registra la oferta en el SISAAB
-				SiSaab.registrarOferta(Oferta);			
+				if(Oferta ==null){
+					
+					//Si no tiene productos, no puede ofertar nada
+					this.Estado	= EstadosActividad.DONE.toString();					
+				}else{					
+					
+					SiSaab.registrarOferta(Oferta);
+					//LOGGER.log(Level.INFO,actor.toString()+" OFERTA REGISTRADA");
+				}
 				
 				this.paso++;				
 				break;
-			case 2:				
+			case 2:	
+				//LOGGER.log(Level.INFO,this.toString()+"paso2 "+actor.getEstado());
+				
 				/**
 				 * Monitorea la Oferta registrada. El agente espera durante la vigencia de la oferta registrada.
 				 * La espera es necesaria, dado que el agente debe evaluar su experiencia después de realizada la venta
@@ -85,17 +97,25 @@ public class RegistrarOfertaUnitaria implements
 				
 				break;
 			case 3:
+				//LOGGER.log(Level.INFO,this.toString()+"paso3 "+actor.getEstado());
 				
 				if(!this.Oferta.vendida())//TODO deberia modificar el precio y volver a ofertar
 					this.paso++;
 				
+				
 				break;				
-			default:
+			default:			
+				
 				this.Estado ="DONE";				
 			}
 			
 		}else if(this.Estado.equalsIgnoreCase(EstadosActividad.DONE.toString())){
 			
+			//substrae el costo de ejecución del MPA del dinero del agente
+			actor.getDinero().subtractCantidad(CostoEjecucion);
+			//Calcula la utilidad obtenida al ejecutar el MPA				
+			actor.setUltimaUtilidadObtenida(DineroInicial-actor.getDinero().getCantidad());
+			//fija estado del actor en IDLE
 			actor.setEstado("IDLE");
 		}
 		

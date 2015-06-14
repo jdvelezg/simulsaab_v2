@@ -39,20 +39,36 @@ public class AmbienteLocal extends DefaultContext<Object> implements GeografiaFi
 	
 	private Coordinate roadAccess;
 	
+	private String nodosCercanos;
+	
 	
 	public AmbienteLocal(){
+		
 		super();
+		ActividadesViables 			= new ArrayList<SistemaActividadHumana>();
+		ProductosAgricolasViables	= new ArrayList<Producto>();
+		NodosSaab					= new ArrayList<NodoSaab>();
+		CentrosUrbanos				= new ArrayList<CentroUrbano>();
+		nodosCercanos				= "";
 	}
 	
 	
 	public AmbienteLocal(String nombre){
-		this.Nombre=nombre;
+		
+		super();
+		this.Nombre	= nombre;
+		
+		ActividadesViables 			= new ArrayList<SistemaActividadHumana>();
+		ProductosAgricolasViables	= new ArrayList<Producto>();
+		NodosSaab					= new ArrayList<NodoSaab>();
+		CentrosUrbanos				= new ArrayList<CentroUrbano>();
+		nodosCercanos				= "";
 	}
 	
 	public void addActividadViable(SistemaActividadHumana act){
 		
 		if(this.ActividadesViables==null)
-			this.ActividadesViables = new ArrayList();
+			this.ActividadesViables = new ArrayList<SistemaActividadHumana>();
 		this.ActividadesViables.add(act);
 	}
 	
@@ -121,7 +137,14 @@ public class AmbienteLocal extends DefaultContext<Object> implements GeografiaFi
 	public void setNodosSaab(List<NodoSaab> nodosSaab) {
 		NodosSaab = nodosSaab;
 	}
-
+	
+	public void addNodoSaab(NodoSaab nodo){
+		
+		if(this.NodosSaab == null){
+			this.NodosSaab = new ArrayList<NodoSaab>();
+		}
+		this.NodosSaab.add(nodo);
+	}
 
 	public List<CentroUrbano> getCentrosUrbanos() {
 		return CentrosUrbanos;
@@ -140,6 +163,16 @@ public class AmbienteLocal extends DefaultContext<Object> implements GeografiaFi
 
 	public void setRoadAccess(Coordinate roadAccess) {
 		this.roadAccess = roadAccess;
+	}
+
+
+	public String getNodosCercanos() {
+		return nodosCercanos;
+	}
+
+
+	public void setNodosCercanos(String nodosCercanos) {
+		this.nodosCercanos = nodosCercanos;
 	}
 	
 	

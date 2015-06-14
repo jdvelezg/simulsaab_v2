@@ -35,14 +35,7 @@ public class Camion implements ObjetoMovil {
 				
 			}else{
 				
-				SaabContextBuilder.SAABContext.remove(this);
-				
-				try{
-					this.finalize();
-					
-				}catch(Throwable e){
-					
-				}
+				SaabContextBuilder.SAABContext.remove(this);				
 			}				
 		}					
 	}

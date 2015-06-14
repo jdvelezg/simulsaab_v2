@@ -43,5 +43,6 @@ public interface SistemaActividadHumana <T>{
 	 */
 	public Proposito getProposito();
 	
+	
 
 }

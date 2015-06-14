@@ -39,6 +39,11 @@ public class Proposito implements Concepto {
 		Enunciado = enunciado;
 	}
 	
+	@Override
+	public String toString(){
+		return this.Enunciado;
+	}
+	
 	
 
 }

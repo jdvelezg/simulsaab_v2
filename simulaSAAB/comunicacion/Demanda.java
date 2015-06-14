@@ -6,11 +6,15 @@ import java.util.List;
 import repast.simphony.engine.environment.RunEnvironment;
 import repast.simphony.engine.schedule.ScheduledMethod;
 import simulaSAAB.agentes.Demandante;
+import simulaSAAB.comunicacion.Oferta.OfertaTrack;
 import simulaSAAB.contextos.PlazaDistrital;
+import simulaSAAB.global.persistencia.AgentTrackObservable;
 import simulaSAAB.global.persistencia.ProductoConfigurado;
 
 public class Demanda implements Concepto {
 	
+	
+	public final DemandaTrack OBSERVABLE = new DemandaTrack();	
 	/**
 	 * String producto. Nombre del producto demandando
 	 */
@@ -70,7 +74,7 @@ public class Demanda implements Concepto {
 	 */
 	@ScheduledMethod (start = 1, interval = 1, priority = 0)
 	public void step () {
-		
+	
 		if(vigente()){
 			
 			Double CurrentTick = RunEnvironment.getInstance().getCurrentSchedule().getTickCount();
@@ -150,12 +154,7 @@ public class Demanda implements Concepto {
 
 	public void setEstado(String estado) {
 		
-		if(estado.equalsIgnoreCase("VIGENTE"))
-			setVigente();
-		else if(estado.equalsIgnoreCase("VENCIDA"))
-			setVencida();
-		else
-			Estado = estado;
+		Estado = estado;
 	}
 	
 	public void setAtendida(){
@@ -166,6 +165,7 @@ public class Demanda implements Concepto {
 		
 		Tickinicial	= RunEnvironment.getInstance().getCurrentSchedule().getTickCount();
 		setEstado("VIGENTE");
+		OBSERVABLE.setDemandaRegistrada();
 	}
 	
 	public void setVencida(){
@@ -204,7 +204,97 @@ public class Demanda implements Concepto {
 		this.puntoDemanda = puntoDemanda;
 	}
 	
+	public class DemandaTrack extends AgentTrackObservable{
+			
+			private Double tick;
+			
+			private final String demandaID;
+			
+			private String demandanteID;
+			
+			private Double presupuesto;
+			
+			private String producto;
+			
+			private Double cantidad;
+			
+			/**
+			 * Constructor
+			 */
+			public DemandaTrack(){
+				
+				super();
+				this.demandaID		= Demanda.this.toString();					
+			}
+			
+			/**
+			 * reporta el registro de la demanda
+			 */
+			public void setDemandaRegistrada(){
+				
+				this.tick			= RunEnvironment.getInstance().getCurrentSchedule().getTickCount();
+				this.demandanteID	= Demanda.this.comprador.toString();
+				this.producto		= Demanda.this.getNombreproducto();
+				this.cantidad		= Demanda.this.Cantidad;
+				this.presupuesto	= Demanda.this.getPresupuesto();
+				
+				super.setChanged();
+				super.notifyObservers(this);
+			}
 	
+			@Override
+			public String dataLineString(String separador) {			
+				
+				return tick.toString()+separador+demandaID+separador+demandanteID+separador+producto+separador+cantidad.toString()+separador+presupuesto.toString()+separador;
+			}
+	
+			@Override
+			public String dataLineStringHeader(String separador) {
+				
+				return "tick"+separador+"demanda_ID"+separador+"demandante_ID"+separador+"producto"+separador+"cantidad"+separador+"presupuesto"+separador;
+			}
+
+			public Double getTick() {
+				return tick;
+			}
+
+			public void setTick(Double tick) {
+				this.tick = tick;
+			}
+
+			public String getDemandaID() {
+				return demandaID;
+			}			
+
+			public String getDemandanteID() {
+				return demandanteID;
+			}			
+
+			public Double getPresupuesto() {
+				return presupuesto;
+			}
+
+			public void setPresupuesto(Double presupuesto) {
+				this.presupuesto = presupuesto;
+			}
+
+			public String getProducto() {
+				return producto;
+			}
+
+			public void setProducto(String producto) {
+				this.producto = producto;
+			}
+
+			public Double getCantidad() {
+				return cantidad;
+			}
+
+			public void setCantidad(Double cantidad) {
+				this.cantidad = cantidad;
+			}			
+			
+	}
 	
 
 }

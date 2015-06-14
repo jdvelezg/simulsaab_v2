@@ -35,7 +35,7 @@ public class MPAConfigurado {
 		case  "ProduccionCebollaBulbo":
 			
 			this.id 		=1;
-			this.proposito 	=new Proposito("Producir");
+			this.proposito 	=new Proposito("Producir cebolla y vender el producto");
 			this.Enunciado	="Sistema de gestion de finca operado por un productor que mediante la transformacion de recursos naturales, materia prima,"+
 							"conocimiento e informacion en productos alimenticios comercializables busca suplir sus necesidades de subsistencia";
 			this.Costo		=cebolla.getCostoproduccionhectarea();			
@@ -46,7 +46,7 @@ public class MPAConfigurado {
 		case  "ComprarCebollaBulbo":
 			
 			this.id 		=2;
-			this.proposito 	=new Proposito("Comprar");
+			this.proposito 	=new Proposito("Comprar cebolla y venderla al detal");
 			this.Enunciado	="Comprar productos";
 			this.Costo		=cebolla.getPrecioSIPSA();
 				
@@ -55,7 +55,7 @@ public class MPAConfigurado {
 		case  "VenderCebollaBulbo":
 			
 			this.id 		=3;
-			this.proposito 	=new Proposito("Vender");
+			this.proposito 	=new Proposito("Comprar cebolla y venderla al detal");
 			this.Enunciado	="Vender Productos";
 			this.Costo		=cebolla.getPrecioSIPSA();
 									
@@ -69,7 +69,17 @@ public class MPAConfigurado {
 			this.Costo		=100000;
 						
 			
-			break;		
+			break;	
+		case  "RegistrarOfertaUnitaria":
+			
+			this.id 		=5;
+			this.proposito 	=new Proposito("Comprar para vender productos");
+			this.Enunciado	="Registrar Oferta en el SISAAB";
+			this.Costo		=new Double(0);
+				
+			
+			break;
+			
 		}
 	}
 

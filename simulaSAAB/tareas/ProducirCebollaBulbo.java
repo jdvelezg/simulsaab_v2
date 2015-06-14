@@ -1,15 +1,18 @@
 package simulaSAAB.tareas;
 
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import repast.simphony.engine.environment.RunEnvironment;
 import simulaSAAB.agentes.AgenteInteligente;
 import simulaSAAB.agentes.Productor;
 import simulaSAAB.agentes.Terreno;
+import simulaSAAB.comunicacion.Dinero;
 import simulaSAAB.comunicacion.Producto;
 import simulaSAAB.comunicacion.Proposito;
 import simulaSAAB.comunicacion.Recurso;
+import simulaSAAB.global.PropositosFactory;
 import simulaSAAB.global.persistencia.MPAConfigurado;
 import simulaSAAB.global.persistencia.ProductoConfigurado;
 
@@ -19,7 +22,7 @@ public class ProducirCebollaBulbo implements SistemaActividadHumana<Productor> {
 	
 	private static Logger LOGGER = Logger.getLogger(ProducirCebollaBulbo.class.getName());
 	
-	private static Proposito proposito = new Proposito("Producir cebolla de bulbo en los terrenos aptos y disponibles");
+	private static Proposito proposito = new Proposito("Producir cebolla y vender el producto");
 	
 	private static String Enunciado;
 	
@@ -35,15 +38,17 @@ public class ProducirCebollaBulbo implements SistemaActividadHumana<Productor> {
 	
 	private final double Tickinicial;
 	
+	private double DineroInicial;
+	
 	private SistemaActividadHumana moverse;
 	
-	private SistemaActividadHumana ProcesoHumano;
+	private RegistrarOfertaUnitaria venderProductos;
 
 	/**
 	 * Constructor
 	 */
 	public ProducirCebollaBulbo() {
-		// TODO Auto-generated constructor stub
+
 		MPAConfigurado mpa 	=new MPAConfigurado("ProduccionCebollaBulbo");
 		
 		this.id				= mpa.getId();
@@ -51,10 +56,10 @@ public class ProducirCebollaBulbo implements SistemaActividadHumana<Productor> {
 		this.Enunciado		= mpa.getEnunciado();
 		this.proposito 		= mpa.getProposito();
 		this.CostoEjecucion	= mpa.getCosto();
+		this.paso			= 0;
+		this.Estado 		= EstadosActividad.READY.toString();
 		
-		Tickinicial	= RunEnvironment.getInstance().getCurrentSchedule().getTickCount();
-		this.Estado = EstadosActividad.READY.toString();
-		
+		Tickinicial	= RunEnvironment.getInstance().getCurrentSchedule().getTickCount();	
 	}
 	
 	
@@ -62,22 +67,25 @@ public class ProducirCebollaBulbo implements SistemaActividadHumana<Productor> {
 	@Override
 	public void secuenciaPrincipalDeAcciones(Productor actor) {
 		
-		if(this.Estado.equalsIgnoreCase(EstadosActividad.READY.toString())){
+		if(Estado.equalsIgnoreCase(EstadosActividad.READY.toString())){
 					
-			if(this.Terreno==null)
-				this.Terreno	= actor.getTerrenosCultivables().get(0);
+			if(Terreno==null){
+				Terreno	= actor.getTerrenosCultivables().get(0);
+			}
 			
 			this.Estado	= EstadosActividad.RUNNING.toString();
-			actor.setEstado("RUNNING");
-			this.paso	= 1;
+			actor.setEstado("RUNNING");			
 			
-			//LOGGER.log(Level.INFO, this.toString() + " Listo para iniciar. Actor: "+actor.toString());
+			DineroInicial = new Double(actor.getDinero().getCantidad());
+			paso	= 1;
+			
+			//LOGGER.log(Level.INFO, this.toString() +this.Estado+ " Listo para iniciar. Actor: "+actor.toString());
 		}
-		else if(this.Estado.equalsIgnoreCase(EstadosActividad.RUNNING.toString())){			
+		else if(this.Estado.equalsIgnoreCase(EstadosActividad.RUNNING.toString())){		
 			
 			switch(this.paso){
 			case 1:
-				
+				//LOGGER.log(Level.INFO,this.toString()+" paso1 "+actor.toString()+": "+actor.getEstado());
 				//Preparación del terreno implica arado, fertilización
 				
 				this.Terreno.setEstado("Preparado");	
@@ -86,7 +94,7 @@ public class ProducirCebollaBulbo implements SistemaActividadHumana<Productor> {
 				break;
 			case 2:
 				
-				//LOGGER.log(Level.INFO, this.toString() + " paso 2. Actor: "+actor.toString());
+				//LOGGER.log(Level.INFO,this.toString()+"paso2 "+actor.getEstado());
 				
 				this.Terreno.setEstado("Sembrado");
 				
@@ -94,7 +102,7 @@ public class ProducirCebollaBulbo implements SistemaActividadHumana<Productor> {
 				break;
 			case 3:
 				
-				//LOGGER.log(Level.INFO, this.toString() + " paso 3. Actor: "+actor.toString());
+				//LOGGER.log(Level.INFO,this.toString()+"paso3 "+actor.getEstado());
 				
 				this.Terreno.setEstado("Cultivo");
 				
@@ -102,7 +110,7 @@ public class ProducirCebollaBulbo implements SistemaActividadHumana<Productor> {
 				break;
 			case 4:				
 				
-				//LOGGER.log(Level.INFO, this.toString() + " paso 4. Actor: "+actor.toString());
+				//LOGGER.log(Level.INFO,this.toString()+"paso4 "+actor.getEstado());
 				
 				this.Terreno.setEstado("Mantenimiento");
 				
@@ -110,49 +118,62 @@ public class ProducirCebollaBulbo implements SistemaActividadHumana<Productor> {
 				break;
 			case 5:
 				
-				//LOGGER.log(Level.INFO, this.toString() + " paso 5. Actor: "+actor.toString());
+				//LOGGER.log(Level.INFO,this.toString()+"paso5 "+actor.getEstado());
 				
 				//espera x numero de ticks
 				
 				Double CurrentTick = RunEnvironment.getInstance().getCurrentSchedule().getTickCount();
 				
 				if(CurrentTick-Tickinicial>=1000){//5 meses
-					this.paso++;
+					//this.paso++;
 				}
-				//paso++;
+			paso++;
 				break;
-			case 6:
+			case 6:				
 				
 				Recurso cosecha	= this.Terreno.cosechar(cebollaBulbo);
 
-				//Fija costo unitario
-				double precio 	= CostoEjecucion/cosecha.getCantidad();				
+				//Fija costo unitario: CostoEjecucionMPAPorHectarea*#hectareasUsadas/CantidadCosechada 
+				double precio 	= CostoEjecucion*Terreno.getHectareas()/cosecha.getCantidad();				
 				cosecha.setCostoUnitario(precio);
 				
-				actor.addProducto(cosecha);	 
-				actor.setPropositoVigente(new Proposito("vender"));
-				ProcesoHumano =new ProcesoAgenteHumano();
-				//VenderCebollaBulbo = new VenderCebollaBulbo();
-								
+				actor.addProducto(cosecha);			
+				venderProductos = new RegistrarOfertaUnitaria();
+				//LOGGER.log(Level.INFO,"paso6 "+actor.getProductos().size());
 				this.paso++;				
 				break;
 			case 7:				
-								
-				ProcesoHumano.secuenciaPrincipalDeAcciones(actor);
+				//LOGGER.log(Level.INFO,this.toString()+"paso7 "+actor.getEstado());
 				
+				venderProductos.secuenciaPrincipalDeAcciones(actor);
+				/*
+				 * Para controlar que el agente continue ProcesoHumano anidado al igual que el presente
+				 * se evalua su estado, impidiendo que caiga en "IDLE" 
+				 */
+				if(actor.getEstado().equalsIgnoreCase("IDLE")){
+					actor.setEstado("RUNNING");
+				}
+					
 				//Si el subsistema termino continua al siguiente paso				
-				if(ProcesoHumano.getEstado().equalsIgnoreCase(EstadosActividad.DONE.toString()))
-					this.paso++;
-
+				if(venderProductos.getEstado().equalsIgnoreCase(EstadosActividad.DONE.toString())){			
+					
+					this.paso++;					
+				}
+					
 				break;
-			default:
+			default:				
+				//Da la actividad por terminada
 				this.Estado ="DONE";				
 			}
 			
 		}else if(this.Estado.equalsIgnoreCase(EstadosActividad.DONE.toString())){
-			actor.setEstado("IDLE");
-			actor.setPropositoVigente(null);
-			//LOGGER.log(Level.INFO,this.toString()+" DONE: -DOING NOTHING");
+			
+			//substrae el costo de ejecución del MPA del dinero del agente
+			actor.getDinero().subtractCantidad(CostoEjecucion);
+			//Calcula la utilidad obtenida al ejecutar el MPA				
+			actor.setUltimaUtilidadObtenida(DineroInicial-actor.getDinero().getCantidad());
+			//fija estado del actor en IDLE
+			actor.setEstado("IDLE");			
 		}
 		
 	}

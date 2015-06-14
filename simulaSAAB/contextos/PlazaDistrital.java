@@ -27,7 +27,7 @@ public class PlazaDistrital extends NodoSaab {
 	 * Constructor
 	 */
 	public PlazaDistrital() {
-		// TODO Auto-generated constructor stub
+		super();
 	}
 	
 	public void AlmacenarProductos(List<OrdenDeServicio> ordenes){

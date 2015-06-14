@@ -5,6 +5,7 @@ package simulaSAAB.tareas;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import simulaSAAB.agentes.AgenteInteligente;
@@ -33,7 +34,8 @@ public class ProcesoAgenteHumano implements SistemaActividadHumana<AgenteIntelig
 	public ProcesoAgenteHumano() {
 		
 		Proposito 	= new Proposito("Emular el comportamiento de un agente humano activo en el mundo");
-		Estado 	= EstadosActividad.UNSET.toString();
+		Estado 		= EstadosActividad.READY.toString();
+		paso		= 0;
 	}
 
 	/* (non-Javadoc)
@@ -46,7 +48,7 @@ public class ProcesoAgenteHumano implements SistemaActividadHumana<AgenteIntelig
 			
 			this.Estado	=EstadosActividad.RUNNING.toString();
 			this.paso	=1;
-			//LOGGER.log(Level.INFO, this.toString() + " Esta listo para iniciar. Actor: " + actor.toString());
+			//LOGGER.log(Level.INFO, "Actor: "+actor.toString());
 		}
 		else if(this.Estado.equalsIgnoreCase(EstadosActividad.RUNNING.toString())){
 			
@@ -57,18 +59,18 @@ public class ProcesoAgenteHumano implements SistemaActividadHumana<AgenteIntelig
 				actor.percibirMundoSelectivamente();
 				actor.formarIntenciones();				
 				
-				//LOGGER.log(Level.INFO, this.toString() + " Paso 1.Decision Actor: " + actor.getActividadVigente().toString());
+				//LOGGER.log(Level.INFO, this.toString() + " Paso 1.Decision Actor: "+actor.toString());
 				
 				paso ++;
 				break;
 			case 2:				
-				//LOGGER.log(Level.INFO, this.toString() + " Paso 2." + actor.toString()+actor.getActividadVigente().toString());				
+				//LOGGER.log(Level.INFO, this.toString() + " Paso 2." + actor.toString());				
 				actor.tomarDecisiones();
 				paso++;
 				
 				break;
 			case 3:				
-				//LOGGER.log(Level.INFO, this.toString() + " Paso 2." + actor.toString()+actor.getActividadVigente().toString());
+				//LOGGER.log(Level.INFO, actor.toString() + " Actua: "+actor.getActividadVigente().toString());
 				actor.actuar();
 				
 				if(actor.getEstado().equalsIgnoreCase("IDLE"))
@@ -76,26 +78,22 @@ public class ProcesoAgenteHumano implements SistemaActividadHumana<AgenteIntelig
 				
 				break;
 			case 4: 				
-				//LOGGER.log(Level.INFO, this.toString() + " Paso 3. Actor: " + actor.toString());				
+				//LOGGER.log(Level.INFO, this.toString() + " Paso 4. Actor: " + actor.toString());				
 				actor.juzgarMundoSegunEstandares();
 				
 				paso++;
 				break;
-			case 5: 				
-				//LOGGER.log(Level.INFO, this.toString() + " Paso 3. Actor: " + actor.toString());				
+			
+			default:
+				//LOGGER.log(Level.INFO, "TERMINA PROCESO "+actor.toString());
 				this.Estado =EstadosActividad.DONE.toString();
 				
-				paso++;
-				break;
-			default:
-				//LOGGER.log(Level.INFO, "TERMINA PROCESO"+actor.toString());
-				this.Estado =EstadosActividad.READY.toString();
-				
-			}
-			
-				
+			}							
+		}else if(this.Estado.equalsIgnoreCase(EstadosActividad.DONE.toString())){
+			//LOGGER.log(Level.INFO, "PROCESO DONE"+actor.toString());
+			this.Estado =EstadosActividad.READY.toString();
 		}
-
+		//LOGGER.log(Level.INFO, "Paso: "+(paso-1)+ " ACTOR: "+actor.toString());
 	}
 
 	/* (non-Javadoc)
@@ -103,13 +101,13 @@ public class ProcesoAgenteHumano implements SistemaActividadHumana<AgenteIntelig
 	 */
 	@Override
 	public SistemaActividadHumana getInstance() {
-		// TODO Auto-generated method stub
+		
 		return new ProcesoAgenteHumano();
 	}
 
 	@Override
 	public int getPaso() {
-		// TODO Auto-generated method stub
+	
 		return this.paso;
 	}
 	
@@ -125,19 +123,19 @@ public class ProcesoAgenteHumano implements SistemaActividadHumana<AgenteIntelig
 
 	@Override
 	public String getEstado() {
-		// TODO Auto-generated method stub
+		
 		return this.Estado;
 	}
 
 	@Override
 	public String getEnunciado() {
-		// TODO Auto-generated method stub
+	
 		return ENUNCIADO;
 	}
 
 	@Override
 	public Proposito getProposito() {
-		// TODO Auto-generated method stub
+	
 		return Proposito;
 	}
 	

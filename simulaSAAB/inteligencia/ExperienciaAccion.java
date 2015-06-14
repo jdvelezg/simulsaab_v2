@@ -2,6 +2,7 @@ package simulaSAAB.inteligencia;
 
 import org.jgap.Chromosome;
 import org.jgap.FitnessFunction;
+import org.jgap.IChromosome;
 
 public class ExperienciaAccion extends FitnessFunction {
 
@@ -10,15 +11,14 @@ public class ExperienciaAccion extends FitnessFunction {
 	}
 
 	@Override
-	protected int evaluate(Chromosome arg0) {
-		// TODO Auto-generated method stub
+	protected double evaluate(IChromosome arg0) {		
 		
 		int ejecucionesExitosas 	= getNumeroEjecucionesExitosas(arg0);
 		int totalEjecuciones		= getNumeroEjecuciones(arg0);
 		
 		int fitness	= (ejecucionesExitosas/totalEjecuciones)*100;
 		
-		return fitness;
+		return new Double(fitness);
 	}
 	
 	
@@ -27,7 +27,7 @@ public class ExperienciaAccion extends FitnessFunction {
 	 * @param solucion Chomosoma solucion potencial
 	 * @return int numero de ejecuciones
 	 */
-	private int getNumeroEjecuciones(Chromosome solucion){
+	private int getNumeroEjecuciones(IChromosome solucion){
 		
 		MPAGene mpaSolucion 	= (MPAGene)solucion.getGene(0);
 		int ejecuciones 		= mpaSolucion.getNumeroEjecuciones();
@@ -40,13 +40,16 @@ public class ExperienciaAccion extends FitnessFunction {
 	 * @param solucion Chomosoma solucion potencial
 	 * @return int numero de ejecuciones
 	 */
-	private int getNumeroEjecucionesExitosas(Chromosome solucion){
+	private int getNumeroEjecucionesExitosas(IChromosome solucion){
 		
 		MPAGene mpaSolucion 	= (MPAGene)solucion.getGene(0);
 		int exitos 		= mpaSolucion.getNumeroEjecucionesExitosas();
 		
 		return exitos;
 	}
+
+
+	
 	
 
 }

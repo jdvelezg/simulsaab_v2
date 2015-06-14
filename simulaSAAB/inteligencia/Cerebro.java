@@ -5,17 +5,24 @@ package simulaSAAB.inteligencia;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.jgap.Chromosome;
 import org.jgap.Configuration;
+import org.jgap.Gene;
 import org.jgap.Genotype;
+import org.jgap.IChromosome;
 import org.jgap.InvalidConfigurationException;
+import org.jgap.Population;
 import org.jgap.impl.DefaultConfiguration;
 
 import repast.simphony.random.RandomHelper;
 import simulaSAAB.agentes.AgenteInteligente;
 import simulaSAAB.comunicacion.Dinero;
 import simulaSAAB.comunicacion.Experiencia;
+import simulaSAAB.tareas.ProcesoAgenteHumano;
+import simulaSAAB.tareas.ProducirCebollaBulbo;
 import simulaSAAB.tareas.SistemaActividadHumana;
 
 /**
@@ -23,6 +30,8 @@ import simulaSAAB.tareas.SistemaActividadHumana;
  *
  */
 public class Cerebro {
+	
+	private static Logger LOGGER = Logger.getLogger(Cerebro.class.getName());
 	
 	private AgenteInteligente Agente;
 	
@@ -48,7 +57,7 @@ public class Cerebro {
 		
 		List<Experiencia> Experiencias 	= Agente.getExperiencia();
 		Double MayorUtilidad			= Agente.getMayorUtilidadObtenida();
-		List<Chromosome> Population 	= new ArrayList();
+		List<Gene> Population 			= new ArrayList();
 		SistemaActividadHumana Solucion = null;
 		
 		//filtra experiencias utilizables para el listado de actividades
@@ -57,36 +66,52 @@ public class Cerebro {
 			SistemaActividadHumana Actividad = exp.getActividadEjecutada();
 			
 			if(Actividades.contains(Actividad)){
-				Population.add(exp.getCromosoma());
+				Population.add(exp.getGene());
 			}
 		}
 		
 		//si no tiene experiencia previa o solo es posible ejecutar una actividad, escoge la actividad al azar
-		if(Population.size()==0 || Actividades.size()==1){
+		//if(Population.size()==0 || Actividades.size()==1){
+		if(Population.size()==0){
+			//LOGGER.log(Level.INFO, this.toString() + " AVOID GA; NO EXPERIENCE");
 			Solucion = Actividades.get(RandomHelper.nextIntFromTo(0, Actividades.size()-1));
-		}else{			
+		}else{	
+			//LOGGER.log(Level.INFO, this.toString() + " IMPLEMENTA GA.");
 			//usa GA			
 			try{
 				
 				Configuration conf = new DefaultConfiguration();
+				conf.reset();//por extraña configuracion del JGAP
 				ExperienciaAccion cicloexperiencia = new ExperienciaAccion();
 				
+				conf.setPopulationSize(Population.size());
 				conf.setFitnessFunction(cicloexperiencia);
+												
+				//Crea array de cromosomas				
+				Chromosome[] InitialChromosome	= new Chromosome[Population.size()];
+				int j=0;
+				for(Gene gn: Population){					
+					Gene[] InitialGene 	= new Gene[1];
+					InitialGene[0] 		= gn;
+					InitialChromosome[j]= new Chromosome(conf,InitialGene);
+					j++;
+				}				
+				conf.setSampleChromosome(InitialChromosome[0]);
 				
-				//Crea array de cromosomas
-				Chromosome[] CromosomasSolucion 	= (Chromosome[])Population.toArray();
-				Genotype PosiblesSoluciones 		= new Genotype(conf,CromosomasSolucion);
-				Chromosome FittestCromosoma 		= PosiblesSoluciones.getFittestChromosome();
-				MPAGene FittestGen					= (MPAGene)FittestCromosoma.getGene(0);
-				
-				Solucion = FittestGen.getMPA();
+				Population soluciones			= new Population(conf,InitialChromosome);
+								
+			
+				Genotype PosiblesSoluciones = new Genotype(conf,soluciones);			
+				IChromosome FittestCromosoma= PosiblesSoluciones.getFittestChromosome();
+				MPAGene FittestGen			= (MPAGene)FittestCromosoma.getGene(0);			
+				Solucion 					= FittestGen.getMPA();
 				
 			}catch(InvalidConfigurationException exc){//En caso de error en la ejecucion del GA escoge una actividad al azar
 				Solucion = Actividades.get(RandomHelper.nextIntFromTo(0, Actividades.size()-1));
-			}
-			
+				LOGGER.log(Level.INFO, this.toString() + " CATCHED: "+ exc.getMessage());
+			}			
 		}
-		
+		LOGGER.log(Level.INFO, "Actor: "+this.Agente.toString()+" ejecuta: "+Solucion.toString());
 		return Solucion;
 	}
 	
@@ -102,7 +127,7 @@ public class Cerebro {
 		double UtilidadActual	= Agente.getUltimaUtilidadObtenida();
 		double MayorUtilidad	= Agente.getMayorUtilidadObtenida();
 		
-		Experiencia experiencia			 			= null;
+		Experiencia experiencia	= null;
 		
 		//Busca experiencias anteriores del MPA.
 		for(Experiencia exp: Experiencias){

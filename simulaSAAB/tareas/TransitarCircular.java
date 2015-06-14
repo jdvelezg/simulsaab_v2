@@ -7,6 +7,7 @@ import repast.simphony.space.gis.Geography;
 import repast.simphony.space.graph.Network;
 import simulaSAAB.comunicacion.Proposito;
 import simulaSAAB.contextos.ObjetoMovil;
+import simulaSAAB.contextos.SaabContextBuilder;
 import simulaSAAB.contextos.environment.Junction;
 import simulaSAAB.contextos.environment.Route;
 
@@ -36,7 +37,7 @@ public class TransitarCircular extends Transitar {
 		
 		if(this.Estado.equalsIgnoreCase(EstadosActividad.READY.toString())){			
 			
-			this.Estado	=EstadosActividad.RUNNING.toString();
+			this.Estado	= EstadosActividad.RUNNING.toString();
 			actor_coord = this.Path.nextStep();
 			
 			//LOGGER.log(Level.INFO, this.toString() + " Esta listo para iniciar. Actor: " + actor.toString());
@@ -55,7 +56,7 @@ public class TransitarCircular extends Transitar {
 			}else{
 				
 				actor_coord = this.Path.nextStep();
-				SAABGeography.move(actor, actor.getGeometria());
+				SaabContextBuilder.SAABGeography.move(actor, actor.getGeometria());
 			}
 		}
 		

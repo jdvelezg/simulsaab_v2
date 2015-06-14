@@ -21,12 +21,6 @@ public class Transitar implements SistemaActividadHumana<ObjetoMovil> {
 	
 	protected Proposito Proposito;	
 	
-	protected Geography<Object> SAABGeography;
-	
-	protected Context<Junction> JunctionsContext;
-	
-	protected Network<Junction> JunctionsNetwork;
-	
 	protected Route Path;
 	
 	protected Coordinate Origen;
@@ -45,12 +39,8 @@ public class Transitar implements SistemaActividadHumana<ObjetoMovil> {
 	 */
 	public Transitar(){
 		
-		this.Costo = new Double(0);
-		this.SAABGeography 		= SaabContextBuilder.SAABGeography;
-		this.JunctionsContext	= SaabContextBuilder.JunctionsContext;
-		this.JunctionsNetwork	= SaabContextBuilder.RoadNetwork;
-		
-		this.Estado		= EstadosActividad.UNSET.toString();
+		this.Costo 	= new Double(0);		
+		this.Estado	= EstadosActividad.UNSET.toString();
 	}
 	
 	/**
@@ -59,27 +49,22 @@ public class Transitar implements SistemaActividadHumana<ObjetoMovil> {
 	 * @param destino
 	 */
 	public Transitar(Coordinate origen, Coordinate destino) {
-		
-		
-		this.SAABGeography 		= SaabContextBuilder.SAABGeography;
-		this.JunctionsContext	= SaabContextBuilder.JunctionsContext;
-		this.JunctionsNetwork	= SaabContextBuilder.RoadNetwork;
-		this.Origen				= origen;
-		this.Destino			= destino;
-		
+						
+		this.Origen		= origen;
+		this.Destino	= destino;		
+		this.Costo 		= new Double(0);		
 		setPath();
 	}
 	
 	public void setPath(){
 		
-		this.Path		= new Route(Origen,Destino);		
-		try{
-			
+		this.Path = new Route(Origen,Destino);		
+		try{			
 			this.Costo		= Path.setRoute();
 			this.Estado		= EstadosActividad.READY.toString();
-		}catch(Exception e){
-			
-			LOGGER.severe("ERROR al crear la ruta: "+e.getMessage());
+		}catch(Exception e){			
+			LOGGER.severe("ERROR al crear la ruta: "+e.toString());
+			e.printStackTrace();
 		}		
 	}
 	
@@ -103,7 +88,7 @@ public class Transitar implements SistemaActividadHumana<ObjetoMovil> {
 			}else{
 				
 				actor_coord = this.Path.nextStep();
-				SAABGeography.move(actor, actor.getGeometria());
+				SaabContextBuilder.SAABGeography.move(actor, actor.getGeometria());
 			}			
 		}
 	}
@@ -123,7 +108,6 @@ public class Transitar implements SistemaActividadHumana<ObjetoMovil> {
 
 	@Override
 	public SistemaActividadHumana getInstance() {
-		// TODO Auto-generated method stub
 		return new Transitar(this.Origen,this.Destino);
 	}
 

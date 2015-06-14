@@ -7,6 +7,7 @@ import simulaSAAB.contextos.CentroUrbano;
 import simulaSAAB.contextos.NodoSaab;
 import simulaSAAB.contextos.ObjetoMovil;
 import simulaSAAB.contextos.PlazaDistrital;
+import simulaSAAB.contextos.SaabContextBuilder;
 
 import com.vividsolutions.jts.geom.Coordinate;
 
@@ -56,8 +57,14 @@ public class DespacharProductos extends Transitar {
 			}else{
 				
 				actor_coord = this.Path.nextStep();
-				SAABGeography.move(actor, actor.getGeometria());
+				SaabContextBuilder.SAABGeography.move(actor, actor.getGeometria());
 			}			
+		}else if(this.Estado.equalsIgnoreCase(EstadosActividad.DONE.toString())){
+			/*
+			 *Una vez cumple su funcion el objeto movil es removido 
+			 */
+			SaabContextBuilder.SAABContext.remove(actor);
+			//LOGGER.log(Level.INFO,this.toString()+" DONE: -DOING NOTHING");
 		}
 	}
 

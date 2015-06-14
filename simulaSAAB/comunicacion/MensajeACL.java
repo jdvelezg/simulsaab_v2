@@ -47,6 +47,12 @@ public class MensajeACL {
 	public MensajeACL(int conversation_id){
 		this.conversationID = conversation_id;
 	}
+	
+	public MensajeACL(int conversation_id, String performative){
+		this.conversationID = conversation_id;
+		this.performative	= performative;
+	}
+	
 	/**
 	 * 
 	 * @return

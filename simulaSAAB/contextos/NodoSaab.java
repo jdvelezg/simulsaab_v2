@@ -5,6 +5,8 @@ package simulaSAAB.contextos;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
@@ -23,7 +25,7 @@ public class NodoSaab {
 	
 	private Geometry geometria;
 	
-	protected List<OrdenDeServicio> ordenes;
+	protected Queue<OrdenDeServicio> ordenes;
 	
 	private Coordinate roadAccess;
 	
@@ -33,16 +35,21 @@ public class NodoSaab {
 	 */
 	public NodoSaab() {
 		
-		this.ordenes = new ArrayList<OrdenDeServicio>();
+		this.ordenes = new ConcurrentLinkedQueue<OrdenDeServicio>();
 	}
 	
 	public NodoSaab(String nombre){
 		
-		this.Nombre=nombre;
-		this.ordenes = new ArrayList<OrdenDeServicio>();
+		this.Nombre		= nombre;
+		this.ordenes 	= new ConcurrentLinkedQueue<OrdenDeServicio>();
 	}
 	
-	
+	/**
+	 * Recibe las ordenes de servicio que representan los productos 
+	 * transportados por el operador logístico
+	 * 
+	 * @param ordenes Ordenes de Servicio entregadas
+	 */
 	public void AlmacenarProductos(List<OrdenDeServicio> ordenes){
 		
 		this.addAllOrdenesServicio(ordenes);
@@ -85,23 +92,15 @@ public class NodoSaab {
 		return this.geometria.getCentroid();
 	}
 
-	public List<OrdenDeServicio> getOrdenes() {
-		return ordenes;
+	public OrdenDeServicio pollOrden() {
+		return ordenes.poll();
 	}
 
-	protected void addOrdenServicio(OrdenDeServicio orden) {
-		
-		if(this.ordenes==null)
-			this.ordenes = new ArrayList<OrdenDeServicio>();
-		
+	protected void addOrdenServicio(OrdenDeServicio orden) {						
 		ordenes.add(orden);
 	}
 	
-	protected void addAllOrdenesServicio(List<OrdenDeServicio> ordenes){
-		
-		if(this.ordenes==null)
-			this.ordenes = new ArrayList<OrdenDeServicio>();
-		
+	protected void addAllOrdenesServicio(List<OrdenDeServicio> ordenes){					
 		ordenes.addAll(ordenes);
 	}
 	

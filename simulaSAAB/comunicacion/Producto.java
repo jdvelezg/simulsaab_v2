@@ -77,7 +77,8 @@ public class Producto implements Concepto {
 			
 			Producto p = (Producto)producto;
 			
-			if(p.getNombre().equalsIgnoreCase(this.Nombre) && p.getUnidadMedida().equalsIgnoreCase(this.UnidadMedida))
+			//if(p.getNombre().equalsIgnoreCase(this.Nombre) && p.getUnidadMedida().equalsIgnoreCase(this.UnidadMedida))
+			if(p.getNombre().equalsIgnoreCase(this.Nombre))
 				return true;
 			else
 				return false;
