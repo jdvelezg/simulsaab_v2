@@ -8,6 +8,16 @@ import simulaSAAB.comunicacion.MensajeACL;
 import simulaSAAB.comunicacion.Oferta;
 import simulaSAAB.tareas.SistemaActividadHumana;
 
+
+/**
+ * Representa al agente <code>Operador de red de oferta<code>
+ * <p>
+ * Agente Inteligente que opera como un <code>oferente</code> que representa los intereses de otros agentes oferentes
+ *  
+ * @author jdvelezg
+ *
+ *TODO Implementar esta clase
+ */
 public class OperadorRedOferta implements Oferente {
 
 	public OperadorRedOferta() {
@@ -136,6 +146,30 @@ public class OperadorRedOferta implements Oferente {
 	public void atenderMensajes() {
 		// TODO Auto-generated method stub
 		
+	}
+
+	@Override
+	public void enviarMensaje(MensajeACL mensaje, AgenteInteligente receptor) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void buscarRespuesta(Integer mensajeID) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public String LugarOferta() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public int getId() {
+		// TODO Auto-generated method stub
+		return 0;
 	}
 
 }

@@ -10,12 +10,20 @@ import simulaSAAB.contextos.ObjetoMovil;
 import simulaSAAB.contextos.SaabContextBuilder;
 import simulaSAAB.contextos.environment.Junction;
 import simulaSAAB.contextos.environment.Route;
-
+/**
+ * Clase para mover un objeto geométrico del punto A al punto B y de regreso al punto A sobre una geografía
+ * 
+ * @author lfgomezm
+ */
 public class TransitarCircular extends Transitar {
 				
-		
+	/**
+	 * Estado actual de la tarea
+	 */
 	private String Estado;
-	
+	/**
+	 * Paso actual de la tarea
+	 */
 	private int paso;	
 	
 
@@ -25,7 +33,12 @@ public class TransitarCircular extends Transitar {
 	public TransitarCircular() {
 		super();
 	}
-	
+	/**
+	 * Ejecuta el movimiento del agente 
+	 * 
+	 * @param punto de origen
+	 * @param punto de destino
+	 */
 	public TransitarCircular(Coordinate origen, Coordinate destino){
 		super(origen, destino);
 	}

@@ -7,6 +7,10 @@ import java.awt.Color;
 
 import repast.simphony.visualization.gis3D.style.SurfaceShapeStyle;
 
+/**
+ * Ajusta la visualización de {@link AmbienteLocal} en la representación gráfica <code>GIS 3D</code> de la <code>proyección GIS</code> de <code>repast simphony</code>
+ *
+ */
 public class AmbienteLocalStyle implements SurfaceShapeStyle<AmbienteLocal> {
 
 	public AmbienteLocalStyle() {

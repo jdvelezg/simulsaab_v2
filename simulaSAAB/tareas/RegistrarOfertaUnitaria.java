@@ -14,17 +14,29 @@ import simulaSAAB.comunicacion.Oferta;
 import simulaSAAB.comunicacion.Recurso;
 import simulaSAAB.global.persistencia.MPAConfigurado;
 import simulaSAAB.global.persistencia.ProductoConfigurado;
-
+/**
+ * Representa el registro de ofertas unitarias en el SISAAB
+ * @author lfgomezm
+ *
+ */
 public class RegistrarOfertaUnitaria implements
 		SistemaActividadHumana<Oferente> {
 	
-	
+	/**
+	 * Identificador de la oferta unitaria
+	 */
 	private final int id;
-	
+	/**
+	 * Registro de la clase usado para depuración <code>Debugging</code>
+	 */
 	private static Logger LOGGER = Logger.getLogger(RegistrarOfertaUnitaria.class.getName());
-	
+	/**
+	 * Establece el propósito de la actividad registro de oferta unitaria
+	 */
 	private static Proposito proposito = new Proposito("Vender productos");
-	
+	/**
+	 * Enunciado de la tarea
+	 */
 	private static String Enunciado;
 	
 	private double CostoEjecucion;
@@ -32,17 +44,23 @@ public class RegistrarOfertaUnitaria implements
 	private double DineroInicial;
 	
 	private Oferta Oferta;	
-	
+	/**
+	 * Estado actual de la tarea
+	 */
 	private String Estado;
-	
+	/**
+	 * Paso actual de la tarea
+	 */
 	private int paso;
 	
 	//private final double Tickinicial;
 	
-
+	/**
+	 * Constructor
+	 */
 	public RegistrarOfertaUnitaria() {
 		
-		MPAConfigurado mpa 	=new MPAConfigurado("RegistrarOfertaUnitaria");
+		MPAConfigurado mpa 	= new MPAConfigurado("RegistrarOfertaUnitaria");
 		
 		this.id				= mpa.getId();
 		this.Enunciado		= mpa.getEnunciado();
@@ -56,65 +74,52 @@ public class RegistrarOfertaUnitaria implements
 		
 		if(this.Estado.equalsIgnoreCase(EstadosActividad.READY.toString())){
 			
-			this.Estado	= EstadosActividad.RUNNING.toString();
-			actor.setEstado("RUNNING");
-			DineroInicial = new Double(actor.getDinero().getCantidad());
-			this.paso	= 1;
+			this.Oferta = actor.generarOferta();
 			
+			if(Oferta !=null){
+				
+				Estado			= EstadosActividad.RUNNING.toString();			
+				DineroInicial 	= new Double(actor.getDinero().getCantidad());
+				paso			= 1;
+				
+				actor.setEstado("RUNNING");	
+			}else{
+				//Si no tiene ofertas, no ejecuta la actividad
+				Estado	= EstadosActividad.DONE.toString();		
+			}
+					
 		}
 		else if(this.Estado.equalsIgnoreCase(EstadosActividad.RUNNING.toString())){			
 			
 			switch(this.paso){
-			case 1:
+			case 1:				
+								
+				SiSaab.registrarOferta(Oferta);			
+				this.paso++;
 				
-				//obtiene la oferta del agente
-				this.Oferta = actor.generarOferta();
-				
-				//registra la oferta en el SISAAB
-				if(Oferta ==null){
-					
-					//Si no tiene productos, no puede ofertar nada
-					this.Estado	= EstadosActividad.DONE.toString();					
-				}else{					
-					
-					SiSaab.registrarOferta(Oferta);
-					//LOGGER.log(Level.INFO,actor.toString()+" OFERTA REGISTRADA");
-				}
-				
-				this.paso++;				
 				break;
 			case 2:	
 				//LOGGER.log(Level.INFO,this.toString()+"paso2 "+actor.getEstado());
 				
 				/**
 				 * Monitorea la Oferta registrada. El agente espera durante la vigencia de la oferta registrada.
-				 * La espera es necesaria, dado que el agente debe evaluar su experiencia después de realizada la venta
+				 * La espera es necesaria, dado que el agente debe evaluar su experiencia despuÃ©s de realizada la venta
 				 * 
 				 * TODO Buscar una forma que el agente ejecute diferentes actividades y luego sea capaz de evaluarlas separadamente.
 				 */
-				if(!Oferta.vigente() || Oferta.vendida())
+				if((!(Oferta.vigente())) || Oferta.vendida())
 					paso++;
 				
-				break;
-			case 3:
-				//LOGGER.log(Level.INFO,this.toString()+"paso3 "+actor.getEstado());
-				
-				if(!this.Oferta.vendida())//TODO deberia modificar el precio y volver a ofertar
-					this.paso++;
-				
-				
-				break;				
-			default:			
-				
+				break;			
+			default:				
+				//substrae el costo de ejecuciÃ³n del MPA del dinero del agente
+				actor.getDinero().subtractCantidad(CostoEjecucion);
+				//Calcula la utilidad obtenida al ejecutar el MPA				
+				actor.setUltimaUtilidadObtenida(new Double(actor.getDinero().getCantidad()).doubleValue()-DineroInicial);
 				this.Estado ="DONE";				
 			}
 			
-		}else if(this.Estado.equalsIgnoreCase(EstadosActividad.DONE.toString())){
-			
-			//substrae el costo de ejecución del MPA del dinero del agente
-			actor.getDinero().subtractCantidad(CostoEjecucion);
-			//Calcula la utilidad obtenida al ejecutar el MPA				
-			actor.setUltimaUtilidadObtenida(DineroInicial-actor.getDinero().getCantidad());
+		}else if(this.Estado.equalsIgnoreCase(EstadosActividad.DONE.toString())){			
 			//fija estado del actor en IDLE
 			actor.setEstado("IDLE");
 		}
@@ -123,32 +128,50 @@ public class RegistrarOfertaUnitaria implements
 
 	@Override
 	public SistemaActividadHumana getInstance() {
-		// TODO Auto-generated method stub
 		return new RegistrarOfertaUnitaria();
 	}
 
 	@Override
 	public int getPaso() {
-		// TODO Auto-generated method stub
 		return paso ;
 	}
 
 	@Override
 	public String getEstado() {
-		// TODO Auto-generated method stub
 		return Estado;
 	}
 
 	@Override
 	public String getEnunciado() {
-		// TODO Auto-generated method stub
 		return Enunciado;
 	}
 
 	@Override
 	public Proposito getProposito() {
-		// TODO Auto-generated method stub
 		return proposito;
+	}
+
+	@Override
+	public int getId() {
+		return this.id;
+	}
+
+	@Override
+	public double getCosto() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+	
+	@Override 
+	public boolean equals(Object obj){
+		
+		if(obj instanceof SistemaActividadHumana){
+			
+			SistemaActividadHumana act = (SistemaActividadHumana)obj;			
+			return this.id==act.getId();
+		}else{
+			return false;
+		}
 	}
 
 }

@@ -3,9 +3,16 @@ package simulaSAAB.inteligencia;
 import org.jgap.Chromosome;
 import org.jgap.FitnessFunction;
 import org.jgap.IChromosome;
-
+/**
+ * Representa el proceso de evaluación de la experiencia tras la ejecución de un <code>MPA</code> por parte de un agente
+ * @author lfgomezm
+ *
+ */
 public class ExperienciaAccion extends FitnessFunction {
-
+	
+	/**
+	 * Constructor
+	 */
 	public ExperienciaAccion() {
 		// TODO Auto-generated constructor stub
 	}
@@ -23,9 +30,9 @@ public class ExperienciaAccion extends FitnessFunction {
 	
 	
 	/**
-	 * Devuelve el numero de ejecuciones de la posible solucion
-	 * @param solucion Chomosoma solucion potencial
-	 * @return int numero de ejecuciones
+	 * Devuelve el número de ejecuciones de la posible solución
+	 * @param solucion Cromosoma solución potencial
+	 * @return int número de ejecuciones
 	 */
 	private int getNumeroEjecuciones(IChromosome solucion){
 		
@@ -36,9 +43,9 @@ public class ExperienciaAccion extends FitnessFunction {
 	}
 	
 	/**
-	 * Devuelve el numero de ejecuciones exitosas de la posible solucion
-	 * @param solucion Chomosoma solucion potencial
-	 * @return int numero de ejecuciones
+	 * Devuelve el número de ejecuciones exitosas de la posible solución
+	 * @param solucion Cromosoma solución potencial
+	 * @return int número de ejecuciones
 	 */
 	private int getNumeroEjecucionesExitosas(IChromosome solucion){
 		

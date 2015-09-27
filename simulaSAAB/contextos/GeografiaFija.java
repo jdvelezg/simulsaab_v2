@@ -7,12 +7,22 @@ import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 
 /**
- * @author dampher
+ * Representa una geografía fije en el espacio  presente en la simulación
+ * 
+ * @author jdvelezg
  *
  */
 public interface GeografiaFija {
 	
-	public void setGeometria(Geometry geom);	
+	/**
+	 * Asigna la geometria
+	 * @param geom Geometry, geometría correspondiente
+	 */
+	public void setGeometria(Geometry geom);
+	/**
+	 * Devuelve la geometría
+	 * @return
+	 */
 	public Geometry getGeometria();
 	
 

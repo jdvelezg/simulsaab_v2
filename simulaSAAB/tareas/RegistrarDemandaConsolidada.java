@@ -2,13 +2,18 @@ package simulaSAAB.tareas;
 
 import simulaSAAB.agentes.Demandante;
 import simulaSAAB.comunicacion.Proposito;
-
-public class RegistrarDemandaConsolidada extends RegistrarDemandaUnitaria {	
+import simulaSAAB.global.persistencia.MPAConfigurado;
+/**
+ * Representa el registro de las demandas consolidadas en el SISAAB
+ * @author lfgomezm
+ *
+ */
+public class RegistrarDemandaConsolidada extends RegistrarDemandaUnitaria {		
 	
 	/**
 	 * Constructor
 	 */
-	public RegistrarDemandaConsolidada() {
+	public RegistrarDemandaConsolidada() {		
 		super();
 	}
 	
@@ -18,7 +23,8 @@ public class RegistrarDemandaConsolidada extends RegistrarDemandaUnitaria {
 	}
 	
 	@Override
-	public SistemaActividadHumana getInstance() {	
-		return new RegistrarDemandaConsolidada();
+	public int getId() {
+		return 0;
 	}
+	
 }

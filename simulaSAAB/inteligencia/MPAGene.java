@@ -2,16 +2,28 @@ package simulaSAAB.inteligencia;
 
 import org.jgap.Configuration;
 import org.jgap.Gene;
+import org.jgap.Genotype;
 import org.jgap.IGeneConstraintChecker;
 import org.jgap.RandomGenerator;
 import org.jgap.UnsupportedRepresentationException;
+import org.jgap.impl.DoubleGene;
+import org.jgap.impl.IntegerGene;
 
 import simulaSAAB.comunicacion.Dinero;
+import simulaSAAB.tareas.ProducirCebollaBulbo;
+import simulaSAAB.tareas.ProducirCebollaBulbo2;
 import simulaSAAB.tareas.SistemaActividadHumana;
 
+/**
+ * Implementación de <code>Gene</code> que representa un <code>MPA</code>, para ser usado en un algoritmo genético de busqueda, 
+ * como parte del proceso cognitivo d elos agentes inteligentes
+ *    
+ * @author jdvelezg
+ *
+ */
 public class MPAGene implements Gene {
 	
-	private static int UniqueIDBase;
+	private static int UniqueIDBase = 0;
 	
 	private final int UniqueId;
 	
@@ -26,7 +38,8 @@ public class MPAGene implements Gene {
 	/**
 	 * Contructor
 	 */
-	public MPAGene() {
+	public MPAGene(){			
+		
 		UniqueId = UniqueIDBase + 1;
 		UniqueIDBase++;
 		UtilidadObtenida = new Dinero(0);
@@ -34,14 +47,14 @@ public class MPAGene implements Gene {
 	
 	/**
 	 * Constructor
-	 * @param act. MPA ejecutado
-	 * @param utl. Utilidad Obtenida
-	 * @param ejec. numero de ejecuciones historicas
-	 * @param exitos. Numero de ejecuciones exitosas
+	 * @param act MPA ejecutado
+	 * @param utl Utilidad Obtenida
+	 * @param ejec numero de ejecuciones historicas
+	 * @param exitos  Numero de ejecuciones exitosas
 	 */
 	public MPAGene(SistemaActividadHumana act, Dinero utl, int ejec, int exitos){
-		UniqueId = UniqueIDBase + 1;
-		UniqueIDBase++;
+				
+		this();		
 		
 		this.MPA 						= act;
 		this.UtilidadObtenida 			= utl;
@@ -52,7 +65,9 @@ public class MPAGene implements Gene {
 	
 	@Override
 	public int compareTo(Object arg0) {
-		
+		/*
+		 * Comparación con null
+		 */
 		if(arg0 == null)
 		{
 			return 1;
@@ -69,20 +84,33 @@ public class MPAGene implements Gene {
 			else
 			{
 				return -1;
-			}
-			
+			}			
 		}
 		
-		double ultilidad 	= this.UtilidadObtenida.getCantidad();
-		double otrautilidad	= (Double)((MPAGene)arg0).getAllele();
-
-		return Double.compare(ultilidad, otrautilidad);		 
+		/*
+		 * Comparacion entre objetos MPAGene
+		 */
+		if(this.MPA.equals(arg0)){
+			
+			double ultilidad 	= this.UtilidadObtenida.getCantidad();
+			double otrautilidad	= (Double)((MPAGene)arg0).getAllele();
+			
+			return Double.compare(ultilidad, otrautilidad);
+			
+		}else{
+			return -1;
+		}			 
 	}
 
 	@Override
 	public void applyMutation(int arg0, double arg1) {
-		// TODO Auto-generated method stub
-
+		
+		
+		if(this.MPA instanceof ProducirCebollaBulbo2){
+			this.MPA = new ProducirCebollaBulbo();
+		}else if(this.MPA instanceof ProducirCebollaBulbo){
+			this.MPA = new ProducirCebollaBulbo2();
+		}
 	}
 
 	@Override
@@ -96,7 +124,6 @@ public class MPAGene implements Gene {
 	 */
 	@Override
 	public Object getAllele() {
-		// TODO Auto-generated method stub
 		return this.UtilidadObtenida.getCantidad();
 	}
 
@@ -109,13 +136,14 @@ public class MPAGene implements Gene {
 
 	@Override
 	public Gene newGene() {
-		
+						 		
 		MPAGene clon = new MPAGene();
-				
+		
 		clon.setMPA(this.MPA);
 		clon.setNumeroEjecuciones(this.NumeroEjecuciones);
-		clon.setNumeroEjecucionesExitosas(this.NumeroEjecucionesExitosas);		
-		
+		clon.setNumeroEjecucionesExitosas(this.NumeroEjecucionesExitosas);
+		clon.setUtilidadObtenida(new Dinero(UtilidadObtenida.getCantidad()));
+				
 		return clon;
 	}
 	
@@ -126,7 +154,7 @@ public class MPAGene implements Gene {
 	public void setAllele(Object arg0) {
 		
 		if(arg0 instanceof Double){
-			UtilidadObtenida.addCantidad((Double)arg0);
+			UtilidadObtenida.setCantidad((Double)arg0);
 		}else if(arg0 instanceof Dinero){
 			UtilidadObtenida = (Dinero)arg0;
 		}
@@ -155,28 +183,60 @@ public class MPAGene implements Gene {
 		return 1;
 	}
 
-
+	/**
+	 * Devuelve el <code>MPA</code> representado por el <code>gen</code>
+	 * @return SistemaActividadHumana
+	 */
 	public SistemaActividadHumana getMPA() {
 		return MPA;
 	}
 
-
+	/**
+	 * Asigna el <code>MPA</code> representado por el <code>gen</code>
+	 * @param mPA <code>MPA</code> representado por el <code>gen</code>
+	 */
 	public void setMPA(SistemaActividadHumana mPA) {
 		MPA = mPA;
 	}
-
+	/**
+	 * Devuelve la utilidad obtenida configurada en el <code>gen</code>
+	 * @return
+	 */
+	public Dinero getUtilidadObtenida() {
+		return UtilidadObtenida;
+	}
+	/**
+	 * Asigna la utilidad obtenida configurada en el <code>gen</code>
+	 * @param utilidadObtenida double, utilidad a ser configurada en el <code>gen</code> 
+	 */
+	public void setUtilidadObtenida(Dinero utilidadObtenida) {
+		UtilidadObtenida = utilidadObtenida;
+	}
+	/**
+	 * Devuelve el número de ejecuciones configurados en el <code>gen</code>
+	 * @return int
+	 */
 	public int getNumeroEjecuciones() {
 		return NumeroEjecuciones;
 	}
-
+	/**
+	 * Asigna el número de ejecuciones a configurar en el <code>gen</code>
+	 * @param numeroEjecuciones número de ejecuciones a configurar
+	 */
 	public void setNumeroEjecuciones(int numeroEjecuciones) {
 		NumeroEjecuciones = numeroEjecuciones;
 	}
-
+	/**
+	 * Devuelve el número de ejecuciones exitosas configuradas en el <code>gen</code>
+	 * @return
+	 */
 	public int getNumeroEjecucionesExitosas() {
 		return NumeroEjecucionesExitosas;
 	}
-
+	/**
+	 * Asigna el número de ejecuciones exitosas a configurar en el <code>gen</code>
+	 * @param numeroEjecucionesExitosas int, número de ejecuciones exitosas
+	 */
 	public void setNumeroEjecucionesExitosas(int numeroEjecucionesExitosas) {
 		NumeroEjecucionesExitosas = numeroEjecucionesExitosas;
 	}
@@ -185,13 +245,13 @@ public class MPAGene implements Gene {
 	public boolean equals(Object obj){
 		
 		if(obj instanceof MPAGene){			
-			MPAGene otroGen = (MPAGene)obj;
+			MPAGene otroGen = (MPAGene)obj; 
 			if(otroGen.getMPA().equals(this.MPA)){			
 				return true;
 			}else{
 				return false;
 			}
-		}else{
+		}else{ 	
 			return false;
 		}		
 	}

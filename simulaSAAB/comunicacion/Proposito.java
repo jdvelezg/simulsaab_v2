@@ -1,5 +1,11 @@
 package simulaSAAB.comunicacion;
 
+/**
+ * Representa el concepto de <code>propóstito</code> usado en la ontología para comunicación entre los agentes y descripción de actividades <code>MPA</code> {@link SistemaActividadHumana}
+ * 
+ * @author jdvelezg
+ *
+ */
 public class Proposito implements Concepto {
 	
 	private String Enunciado;
@@ -13,7 +19,7 @@ public class Proposito implements Concepto {
 	
 	/**
 	 * Constructor
-	 * @param enunciado
+	 * @param enunciado string, enunciado del propósito
 	 */
 	public Proposito (String enunciado){
 		this.Enunciado = enunciado;
@@ -21,8 +27,9 @@ public class Proposito implements Concepto {
 	
 	/**
 	 * Compara los elementos del proposito y determina si son iguales
+	 * 
 	 * @param p Proposito a comparar
-	 * @return boolean true si son iguales, false en caso contrario.
+	 * @return boolean <code>true</code> si son iguales, <code>false</code> en caso contrario
 	 */
 	public boolean compare(Proposito p){
 		if(this.Enunciado.compareToIgnoreCase(p.getEnunciado())==0)
@@ -30,11 +37,17 @@ public class Proposito implements Concepto {
 		else
 			return false;
 	}
-
+	/**
+	 * Devuelve el enunciado 
+	 * @return
+	 */
 	public String getEnunciado() {
 		return Enunciado;
 	}
-
+	/**
+	 * Asigna el enunciado
+	 * @param enunciado
+	 */
 	public void setEnunciado(String enunciado) {
 		Enunciado = enunciado;
 	}
@@ -43,7 +56,5 @@ public class Proposito implements Concepto {
 	public String toString(){
 		return this.Enunciado;
 	}
-	
-	
 
 }

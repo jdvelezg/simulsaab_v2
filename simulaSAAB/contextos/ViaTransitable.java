@@ -14,7 +14,11 @@ import simulaSAAB.contextos.environment.Junction;
 import simulaSAAB.contextos.environment.NetworkEdge;
 
 /**
- * @author dampher
+ * Representa una vía trnasitable por los agentes de la simulación mediante {@link ObjetoMovil}
+ * <p>
+ * Agrega la capacidad de simular carreteras y autopistas de abastecimiento
+ * 
+ * @author jdvelezg
  *
  */
 public class ViaTransitable extends DefaultContext<Object> implements GeografiaFija  {
@@ -113,8 +117,7 @@ public class ViaTransitable extends DefaultContext<Object> implements GeografiaF
 		}
 	}
 	
-	/**Getters & Setters**/
-	
+		
 	@Override
 	public Geometry getGeometria() {
 		
@@ -126,62 +129,103 @@ public class ViaTransitable extends DefaultContext<Object> implements GeografiaF
 		
 		Geometria = geom;
 	}
-
+	/**
+	 * Devuelve el identificador
+	 * @return string identificador
+	 */
 	public String getIdentificador() {
 		return Identificador;
 	}
-
+	/**
+	 * Asigna el identificador
+	 * @param identificador string identificador de la via
+	 */
 	public void setIdentificador(String identificador) {
 		Identificador = identificador;
 	}
-
+	/**
+	 * Devuelve el nombre de la vía
+	 * @return String
+	 */
 	public String getNombre() {
 		return Nombre;
 	}
-
+	/**
+	 * Asigna el nombre de la vía
+	 * @param nombre string, nombre de la vía
+	 */
 	public void setNombre(String nombre) {
 		Nombre = nombre;
 	}
-
+	/**
+	 * Devuelve el tipo de vía
+	 * @return String
+	 */
 	public String getTipo() {
 		return Tipo;
 	}
-
+	/**
+	 * Asigna el tipo de vía
+	 * @param tipo string, tipo de vía
+	 */
 	public void setTipo(String tipo) {
 		Tipo = tipo;
 		setMultiplicador();
 	}
-
+	/**
+	 * Devuelve la geografía de la vía
+	 * @return Geography
+	 */
 	public Geography getGeografia() {
 		return Geografia;
 	}
-
+	/**
+	 * Asigna la geografía de la vía
+	 * @param geografia  Geography, geografía de la vía
+	 */
 	public void setGeografia(Geography geografia) {
 		Geografia = geografia;
 	}
-	
+	/**
+	 * Asocia una intersección {@link junction} a la vía
+	 * @param j Junction intersección de la via con otra
+	 */
 	public void addJunction(Junction j){
 		this.junctions.add(j);
 	}
-
-
+	/**
+	 * Devuelve el {@link Edge} asociado a la vía 
+	 * @return NetworkEdge<Junction>
+	 */
 	public NetworkEdge<Junction> getEdge() {
 		return edge;
 	}
 
-
+	/**
+	 * Asigna el <code>Edge</code> asociado a la vía 
+	 * @param edge NetworkEdge<Junction> asociado a al vía
+	 */
 	public void setEdge(NetworkEdge<Junction> edge) {
 		this.edge = edge;
 	}
-
+	/**
+	 * Devuelve el multiplicador
+	 * @return int
+	 */
 	public Integer getMultiplicador() {
 		return Multiplicador;
 	}
-
+	/**
+	 * Asigna el multiplicador
+	 * @param multiplicador int multiplicador de la vía
+	 */
 	public void setMultiplicador(Integer multiplicador) {
 		Multiplicador = multiplicador;
 	}
-	
+	/**
+	 * Devuelve un arreglo con las coordenadas que conforman la geometría de la vía
+	 * @return  Coordinate[] 
+	 */
 	public Coordinate[] getCoordinates(){
 		return this.Geometria.getCoordinates();
 	}

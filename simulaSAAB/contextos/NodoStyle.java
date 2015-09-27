@@ -6,7 +6,11 @@ import gov.nasa.worldwind.render.SurfaceShape;
 import java.awt.Color;
 
 import repast.simphony.visualization.gis3D.style.SurfaceShapeStyle;
-
+import simulaSAAB.agentes.Intermediario;
+/**
+ * Ajusta la visualización de {@link NodoSaab} en la representación gráfica <code>GIS 3D</code> de la <code>proyección GIS</code> de <code>repast simphony</code>
+ *
+ */
 public class NodoStyle implements SurfaceShapeStyle<NodoSaab> {
 	
 	@Override

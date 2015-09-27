@@ -19,6 +19,10 @@ import simulaSAAB.agentes.AgenteInteligente;
 import simulaSAAB.agentes.Productor;
 import simulaSAAB.agentes.VendedorFinal;
 
+/**
+ * Ajusta la visualización de {@link AgenteInteligente} en la representación gráfica <code>GIS 3D</code> de la <code>proyección GIS</code> de <code>repast simphony</code>
+ *
+ */
 public class AgenteStyle implements MarkStyle<AgenteInteligente> {
 	
 	private Offset labelOffset;
@@ -95,15 +99,15 @@ public class AgenteStyle implements MarkStyle<AgenteInteligente> {
 	public String getLabel(AgenteInteligente obj) {
 		
 		if(obj instanceof Productor){
-			return "Productor";
+			return "";
 		}else 
 		if(obj instanceof VendedorFinal){
-			return "Vendedor";
+			return "";
 		}/*else
 		if(obj instanceof Intermediario){
 			return "Intermediario";
 		}*/else{
-			return "Agente";
+			return "";
 		}
 		
 	}

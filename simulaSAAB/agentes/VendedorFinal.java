@@ -9,8 +9,10 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.logging.Logger;
 
 import bsh.This;
+import repast.simphony.engine.environment.RunEnvironment;
 import repast.simphony.engine.schedule.ScheduledMethod;
 import simulaSAAB.comunicacion.Demanda;
 import simulaSAAB.comunicacion.Dinero;
@@ -26,110 +28,175 @@ import simulaSAAB.comunicacion.Proposito;
 import simulaSAAB.comunicacion.EjecutarAccionConProposito;
 import simulaSAAB.comunicacion.Recurso;
 import simulaSAAB.contextos.PlazaDistrital;
+import simulaSAAB.contextos.SaabContextBuilder;
 import simulaSAAB.global.PropositosFactory;
+import simulaSAAB.global.VariablesGlobales;
+import simulaSAAB.global.persistencia.AgentTrackObservable;
 import simulaSAAB.inteligencia.Cerebro;
+import simulaSAAB.tareas.ConformarNutrired;
 import simulaSAAB.tareas.ConsolidarDemanda;
 import simulaSAAB.tareas.EstadosActividad;
 import simulaSAAB.tareas.ProcesoAgenteHumano;
+import simulaSAAB.tareas.RegistrarDemandaUnitaria;
 import simulaSAAB.tareas.SistemaActividadHumana;
 
 /**
- * @author dampher
+ * Representa el agente <code>Vendedor final</code>
+ * <p>
+ * Agente inteligente cuyas acciones estan encaminadas a la compra de productos al por mayor para su posterior venta al consumidor final
+ * 
+ * @author jdvelezg
  *
  */
 public class VendedorFinal implements AgenteInteligente, Demandante {
 	
+	/**
+	 * Identificador único del agente
+	 */
+	private final int id;
+	/**
+	* Registro de la clase usado para depuración <code>Debugging</code>
+	*/
+	private static Logger LOGGER = Logger.getLogger(VendedorFinal.class.getName());
+	/**
+	 * rol del agente
+	 */
 	public static String ROL ="vendedor";
-	
+	/**
+	 * intención del agente
+	 */
 	public static String INTENCION ="vender";
-	
+	/**
+	 * objetivo del agente
+	 */
 	private static String OBJETIVO;
 	
+	public final PrecioFinalTrack OBSERVABLE = new PrecioFinalTrack();
+	/**
+	 * propósito vigente del agente
+	 */
 	private Proposito PropositoVigente;
-	
+	/**
+	 * dinero del agente
+	 */
 	private simulaSAAB.comunicacion.Dinero Dinero;	
 	
 	private Cerebro CerebroVendedor;
-	
+	/**
+	 * Instancia del ProcesoAgenteHumano
+	 */
 	private ProcesoAgenteHumano ProcesoHumanoDefinido;
-	
+	/**
+	 * actividad vigente del agente
+	 */
 	private SistemaActividadHumana ActividadVigente;
-	
+	/**
+	 * mensajes recibidos por el agente
+	 */
 	private Queue<MensajeACL> MensajesRecibidos;
 	
-	protected Queue<OrdenDePedido> pedidosRecibidos;
+	protected Queue<OrdenDeCompra> pedidosRecibidos;
 	
-	private Map<Integer, Queue<MensajeACL>> MensajesEnviados;
+	private ConcurrentHashMap<Integer, Queue<MensajeACL>> MapRespuestas;
+	
+	private List<MensajeACL> MensajesEnviados;
 	
 	private boolean MensajeAceptado;
-	
+	/**
+	 * conjunto experiencias obtenidas por el agente
+	 */
 	private List<Experiencia> Experiencia;
-	
+	/**
+	 * conjunto de tiendas poseidas por el agente
+	 */
 	private List<Tienda> Tiendas;
-	
+	/**
+	 * punto de demanda del agente
+	 */
 	protected PlazaDistrital puntoDemanda;
-	
+	/**
+	 * demandas generadas por el agente
+	 */
 	private List<Demanda> Demandas;
 	
-	private List<Producto> Productos;
+	private List<Recurso> Productos;
 	
 	private List<Producto> ProductosViablesPercibidos;
-	
+	/**
+	 * actividades ejecutables por el agente 
+	 */
 	private List<SistemaActividadHumana> ActividadesEjecutables;
-	
+	/**
+	 * mayor utilidad obtenida por el agente
+	 */
 	private Double MayorUtilidadObtenida;
-	
+	/**
+	 * última utilidad obtenida por el agente
+	 */
 	private Double UltimaUtilidadObtenida;
-	
+	/**
+	 * estado del agente
+	 */
 	private String Estado;
-	
+	/**
+	 * intención de consolidación del agente
+	 */
 	private boolean intencionDeConsolidacion;
 	
 	/**
-	 * Constructor
+	 * Constructor de la clase
 	 */
-	public VendedorFinal(){
+	public VendedorFinal(int id){
+		
+		this.id = id;
 		
 		Experiencia 		= new ArrayList<Experiencia>();		
 		Tiendas				= new ArrayList<Tienda>();		
 		Demandas			= new ArrayList<Demanda>();		
-		Productos 			= new ArrayList<Producto>();
+		Productos 			= new ArrayList<Recurso>();
 		
 		ProductosViablesPercibidos 	= new ArrayList<Producto>();		
 		ActividadesEjecutables 		= new ArrayList<SistemaActividadHumana>();		
 		
 		CerebroVendedor			= new Cerebro(this);
+		CerebroVendedor.OBSERVABLE.addObserver(SaabContextBuilder.OBSERVADOR);
 		ProcesoHumanoDefinido 	= new ProcesoAgenteHumano();
+		
+		this.OBSERVABLE.addObserver(SaabContextBuilder.OBSERVADOR);
 		
 		Dinero					= new Dinero(new Double(0),"COP");
 		UltimaUtilidadObtenida 	= new Double(0);
 		MayorUtilidadObtenida	= new Double(0);	
 		
-		pedidosRecibidos	= new ConcurrentLinkedDeque<OrdenDePedido>();
+		this.pedidosRecibidos	= new ConcurrentLinkedDeque<OrdenDeCompra>();
 		
-		MensajesEnviados	= new ConcurrentHashMap<Integer, Queue<MensajeACL>>();
-		MensajesRecibidos	= new ConcurrentLinkedDeque<MensajeACL>();
+		this.MensajesEnviados	= new ArrayList<MensajeACL>(100);
+		this.MapRespuestas		= new ConcurrentHashMap<Integer, Queue<MensajeACL>>();
+		this.MensajesRecibidos	= new ConcurrentLinkedDeque<MensajeACL>();
 		
-		Estado 	= "IDLE";
+		Estado 	= "IDLE";				
 	}
 
 	
 	/**
-	 * Metodo que ejecuta el comportamiento del agente en cada ciclo de reloj enviado por repast
-	 * Primero verifica que el agente no tenga ningun mensaje pendiente a procesar.
-	 * Luego ejecuta el proceso humano definido para un agente humano activo en el mundo
+	 * Metodo que ejecuta el comportamiento del agente en cada ciclo de reloj <code>Tick</code>
+	 * <p>
+	 * Verifica que el agente no tenga ningun mensaje pendiente a procesar, luego ejecuta el proceso humano definido para un agente humano activo en el mundo
+	 * <code>start = 500, interval = 1</code>
 	 */
-	@ScheduledMethod (start = 10, interval = 1)
+	@ScheduledMethod (start = 500, interval = 1)
 	public void step () {
-		
-		if(ProcesoHumanoDefinido.getEstado().equalsIgnoreCase(EstadosActividad.READY.toString()) && this.MensajesRecibidos.size()>0){
+
+		if(ProcesoHumanoDefinido.getEstado().equalsIgnoreCase(EstadosActividad.READY.toString()) && !this.MensajesRecibidos.isEmpty()){
 			//Procesa el mensaje que tiene en espera
 			atenderMensajes();
 			
+		}else if(this.Estado.equalsIgnoreCase("WAITING") && this.ActividadVigente instanceof ConformarNutrired){
+			//continua esperando proceso de consolidacion
 		}else{
+			//System.out.println("Dinero: "+this.Dinero.getCantidad());
 			ProcesoHumanoDefinido.secuenciaPrincipalDeAcciones(this);	
-		}
-			
+		}			
 	}
 	
 	
@@ -140,6 +207,8 @@ public class VendedorFinal implements AgenteInteligente, Demandante {
 	@Override
 	public void percibirMundoSelectivamente() {
 		
+		//Resetea el listado de actividades viables percibidas
+		ActividadesEjecutables.clear();
 		//Consulta tareas ejecutables en el ambiente			
 		for(Tienda local : Tiendas){
 			
@@ -162,15 +231,17 @@ public class VendedorFinal implements AgenteInteligente, Demandante {
 	public void formarIntenciones() {
 		
 		if(PropositoVigente==null)
-			this.PropositoVigente = new PropositosFactory(this.ROL,this.INTENCION).getProposito();		
+			this.PropositoVigente = new PropositosFactory(VendedorFinal.ROL,VendedorFinal.INTENCION).getProposito();		
 	}
 
 	@Override
 	public void tomarDecisiones() {
 		
-		if(ActividadesEjecutables.size()>0)
-			this.ActividadVigente = CerebroVendedor.tomarDecision(ActividadesEjecutables);
-		else
+		if(ActividadesEjecutables.size()>0){
+			
+			this.ActividadVigente 		= CerebroVendedor.tomarDecision(ActividadesEjecutables).getInstance();
+			this.UltimaUtilidadObtenida = new Double(0);
+		}else
 			System.out.println("Imposible tomar decision, No actividad viable size: "+ ActividadesEjecutables.size());
 	}
 
@@ -198,14 +269,25 @@ public class VendedorFinal implements AgenteInteligente, Demandante {
 		 * 
 		 * TODO cuando existan varios productos en el ambiente, debe escoger o iterar los productos que va a demandar
 		 */
-		Producto producto 	= ProductosViablesPercibidos.get(0);		
-		Double cantidad		= Math.floor(Dinero.getCantidad()/producto.getPrecioEnMercado());
+		Producto producto 			= ProductosViablesPercibidos.get(0);
+		double dineroDisponible		= Dinero.getCantidad();
+		double precioProducto		= producto.getPrecioEnMercado();
+		/*
+		 * Tomando como referencia el precio en mercado, toma el dinero total del agente, dividido el precio del producto en el mercado
+		 * y pondera un cantidad de producto a comprar.
+		 */
+		double ponderacion		= dineroDisponible>0 && precioProducto>0?(dineroDisponible/precioProducto):0;
+		double cantidad			= Math.floor(ponderacion);
+		Demanda novaDemanda 	= new Demanda(producto.getNombre(),cantidad,VariablesGlobales.TICKS_VIGENCIA_DEMANDA,false);
 		
-		Demanda novaDemanda = new Demanda(producto.getNombre(),cantidad,192,false);//192ciclos -> 8 dias
+		novaDemanda.OBSERVABLE.addObserver(SaabContextBuilder.OBSERVADOR);
 		novaDemanda.setPuntoDemanda(puntoDemanda);
 		novaDemanda.setComprador(this);
-		this.Demandas.add(novaDemanda);
-		
+		if(ponderacion>0)
+			this.Demandas.add(novaDemanda);
+		/*
+		 * Si el vendedor no tiene dinero disponible la demanda devuelta es por cero productos
+		 */
 		return novaDemanda;
 	}
 
@@ -226,49 +308,128 @@ public class VendedorFinal implements AgenteInteligente, Demandante {
 		intencionDeConsolidacion = bool;		
 	}
 	
+	/**
+	 * Envia un mensaje a otro agente inteligente
+	 * 
+	 * @param mensaje
+	 * @param receptor
+	 */
+	@Override
+	public synchronized void enviarMensaje(MensajeACL mensaje, AgenteInteligente receptor){
+		
+		//Evita Nullpointer Exception
+		if(MensajesEnviados == null){
+			MensajesEnviados 	= new ArrayList<MensajeACL>();
+			MapRespuestas		= new ConcurrentHashMap<Integer, Queue<MensajeACL>>();
+		}
+		
+		//Agrega el mensaje al mapa de respuestas
+		Queue<MensajeACL> colaRespuestas = new ConcurrentLinkedDeque<MensajeACL>();
+		if(MapRespuestas.replace(mensaje.getConversationID(), colaRespuestas)==null){
+			MapRespuestas.put(mensaje.getConversationID(), colaRespuestas);
+		}
+							
+		//Agrega el mensaje al mapa de Enviados
+		 MensajesEnviados.add(mensaje);
+		
+		 //Envia el mensaje
+		receptor.recibirMensaje(mensaje);
+	}
+	
 	@Override
 	public synchronized void recibirMensaje(MensajeACL mssg) {
 		
-		Integer MensajeID 	= mssg.getConversationID();
+		//Evita NullPointerException
+		if(MensajesRecibidos == null)
+			MensajesRecibidos = new ConcurrentLinkedDeque<MensajeACL>();
 		
 		//Si es una respuesta a un mensaje enviado
-		if(MensajesEnviados.containsKey(MensajeID)){
+		if(mssg.getInReply_to()!=null){
 			
-			Queue mensajes = MensajesEnviados.get(MensajeID);
-			mensajes.offer(mssg);	
+			int IdConversacion 		= mssg.getInReply_to();
+			MensajeACL mssgEnviado 	= null;
+			//Busca el mensaje original
+			for(MensajeACL m: MensajesEnviados){				
+				
+				if(m.getConversationID() == IdConversacion){
+					mssgEnviado = m;
+					break;
+				}				
+			}//EndFor
 			
+			if(mssgEnviado!=null){
+				
+				Queue<MensajeACL> colaRespuestas = MapRespuestas.get(mssg.getConversationID());
+				colaRespuestas.offer(mssg);
+			}else{
+				//El mensaje no fue enviado por el agente
+				this.MensajesRecibidos.offer(mssg);
+			}			
 		}else{
-			
-			if(MensajesRecibidos == null){
-				this.MensajesRecibidos = new ConcurrentLinkedDeque();
-			}
 			this.MensajesRecibidos.offer(mssg);
-		}	
+		}
 	}
 	
+	/**
+	 * Busca respuesta de un mensaje especifico
+	 * 
+	 * @param MensajeID Id del mensaje que espera sea contestado
+	 */
+	@Override
+	public void buscarRespuesta(Integer conversacionID){
+		
+		try{						
+			Queue<MensajeACL> colaRespuestas = this.MapRespuestas.get(conversacionID);
+			
+			if(!colaRespuestas.isEmpty()){
+				
+				atenderMensaje(colaRespuestas.poll());
+			}
+			
+		}catch(IndexOutOfBoundsException exc1){
+			System.err.println("IndexOutOfBoundsException: " + exc1.getMessage());
+		}catch(NullPointerException exc2){
+			System.err.println("NullPointerException: " + exc2.getMessage());
+		}		
+	}
+	
+	/**
+	 * interpreta los mensajes recibidos aún pendientes
+	 */
 	public void atenderMensajes() throws NullPointerException{
 		
-		MensajeACL mensaje = this.MensajesRecibidos.poll();		
+		MensajeACL mensaje = this.MensajesRecibidos.poll();	
+		if(mensaje!=null)
+			atenderMensaje(mensaje);
+		else
+			System.out.println(this.toString()+" no hay mensajes");
+	}
+	
+	/**
+	 * Interpreta el mensaje pasado como parámetro
+	 * 
+	 * @param mensaje mensaje a ser interpretado
+	 */
+	public void atenderMensaje(MensajeACL mensaje){
 		
 		if(mensaje.getPerformative().equalsIgnoreCase("propose")){//solo acepta proposals
-			
+	
 			Preposicion contenido = mensaje.getContent();
 			/**
 			 * Acepta el mensaje si es una proposicion para consolidacion 
 			 */
 			if(contenido instanceof EjecutarAccionConProposito){
-				
+		
 				EjecutarAccionConProposito proposal = (EjecutarAccionConProposito) contenido;
-				SistemaActividadHumana actividad	= proposal.getActividad();
+				SistemaActividadHumana actividad	= proposal.getActividad().getInstance();
 				
-				if(actividad instanceof ConsolidarDemanda && this.intencionDeConsolidacion()){
+				if(actividad instanceof ConformarNutrired && this.intencionDeConsolidacion()){
 					
 					mensaje.addReceiver(this);
 					MensajeACL respuesta 		= mensaje.getReply_with();
 					AgenteInteligente sender 	= mensaje.getReply_to();
 					sender.recibirMensaje(respuesta);
-					this.MensajeAceptado 		= true;
-					
+				
 					this.ActividadVigente = actividad.getInstance();
 					this.ProcesoHumanoDefinido.setPaso(3);
 					
@@ -281,40 +442,51 @@ public class VendedorFinal implements AgenteInteligente, Demandante {
 			//No hace nada
 		}else if(mensaje.getPerformative().equalsIgnoreCase("accept-proposal")){
 			
-			Preposicion contenido = mensaje.getContent();
-			/**
-			 * Evalua si el mensaje si es una aceptacion de consolidacion
-			 * TODO evaluar otras accept-proposal 
-			 */
-			if(contenido instanceof EjecutarAccionConProposito){
-				
-				EjecutarAccionConProposito proposal = (EjecutarAccionConProposito) contenido;
-				SistemaActividadHumana actividad	= proposal.getActividad();
-				
-				if(actividad instanceof ConsolidarDemanda){
-					/**
-					 * Se incluye en la nutrired.
-					 * 
-					 * Es valido mientras el sistema de actividad 'conformarNutrired' no posea pasos secuenciales de lo contrario
-					 * TODO se debe generar la inclusion a la nutrired con un iterador
-					 *  
-					 */
-					actividad.secuenciaPrincipalDeAcciones(this);
-				}						
+			Integer conversacionId = mensaje.getInReply_to();
+			MensajeACL mssgEnviado = null;
+			//Busca el mensaje original
+			for(MensajeACL m: MensajesEnviados){
+				if(m.getConversationID()==conversacionId){
+					mssgEnviado = m;
+					break;
+				}
 			}
+			
+			if(mssgEnviado!=null){ 
+				Preposicion contenido = mssgEnviado.getContent();
+				/**
+				 * Evalua si el mensaje si es una aceptacion de consolidacion
+				 * TODO evaluar otras accept-proposal 
+				 */
+				if(contenido instanceof EjecutarAccionConProposito){
+						
+					EjecutarAccionConProposito proposal = (EjecutarAccionConProposito) contenido;
+					SistemaActividadHumana actividad	= proposal.getActividad().getInstance();
+					
+					if(actividad instanceof ConformarNutrired){
+						/**
+						 * Se incluye en la nutrired.
+						 * 
+						 * Es valido mientras el sistema de actividad 'conformarNutrired' no posea pasos secuenciales de lo contrario:
+						 * TODO se debe generar la inclusion a la nutrired con un iterador
+						 *  
+						 */						
+						actividad.secuenciaPrincipalDeAcciones(this);
+					}					
+				}//End AccionProposito
+			}//Ed IF ENviado			
 			
 		}else{			
 			rejectMessage(mensaje);			
 		}
-		//TODO agregar procesamiento de otras preformativas cfp-inform.. etc		
+		//TODO agregar procesamiento de otras preformativas cfp-inform.. etc
 	}
 	
 	/**
-	 * Devuelve un mensaje ACL con la respuesta negativa al mensaje pasado como parametro
-	 * @param mensaje
-	 * 		Mensaje ACL
-	 * @return
-	 * 		Mensaje ACL
+	 * Devuelve un mensaje ACL con la respuesta de rechazo al mensaje pasado como parametro
+	 * @param mensaje Mensaje ACL mensaje a se contestado
+	 * 
+	 * @return Mensaje ACL mensaje de respuesta en rechazo
 	 */
 	private MensajeACL rejectMessage(MensajeACL mensaje){
 		
@@ -334,14 +506,13 @@ public class VendedorFinal implements AgenteInteligente, Demandante {
 		
 		return respuesta;
 	}
-	
-	/**
-	 * Recibe un pedido despachado en servicio logistico
-	 */
-	public synchronized void recibirPedido(OrdenDePedido pedido){
-		pedidosRecibidos.offer(pedido);
-		//actualiza obervador
-		pedido.OBSERVABLE.PedidoEntregado();
+		
+	@Override
+	public synchronized void recibirPedido(List<OrdenDeCompra> compras){
+		
+		for(OrdenDeCompra or: compras){
+			pedidosRecibidos.offer(or);
+		}		
 	}
 	
 	@Override
@@ -354,30 +525,87 @@ public class VendedorFinal implements AgenteInteligente, Demandante {
 		
 		while(!(pedidosRecibidos.isEmpty())){
 			
-			List<OrdenDeCompra> ordenes = pedidosRecibidos.poll().getOrdenesDeCompra();
+			OrdenDeCompra compra 		= pedidosRecibidos.poll();
+			Recurso RecursosRecibidos 	= compra.getDetalleCompra();
+			Dinero precioPagado			= compra.getPagoAcordado();
+			/*
+			 * Distribuye los productos recibidos en las tiendas
+			 * y fija el precio de venta agregando al valor pagado el 10%
+			 */			
+			distribuirProductosEnTienda(RecursosRecibidos, precioPagado.getCantidad());
 			
+			/**ERROR**/
+			if(precioPagado.getCantidad()/RecursosRecibidos.getCantidad()<500){
+				LOGGER.info(this.toString()+compra.getOferta().toString()+"rec: "+RecursosRecibidos.getCantidad()+" "+RecursosRecibidos.toString()+" prec: "+precioPagado.getCantidad());
+			}
 			
-			
-			for(OrdenDeCompra compra: ordenes){
-				
-				distribuirProductosEnTienda(compra.getOferta().getProductos());
-			}			
 		}		
 	}
 	
-	/**
-	 * Almacena los productos comprados en las tiendas para su venta
-	 * @param productos
-	 */
-	public void distribuirProductosEnTienda(Recurso productos){
+	
+	@Override
+	public void distribuirProductosEnTienda(Recurso productos, double precioCompra){
 		
-		//TODO cambiar si el agente tiene mas de una tienda
-		Tienda tienda = this.Tiendas.get(0);
-		tienda.AlmacenarProductos(productos);		
+		if(precioCompra!=0){//SI 0 es porq no encontro producto
+			/*
+			 * Toma la primera tienda
+			 * TODO Distribuir en diferentes tiendas
+			 */
+		//LOGGER.info("distribuye en tienda "+this.ActividadVigente.toString());
+			Tienda tienda 				= this.Tiendas.get(0);		
+			double cantidad				= productos.getCantidad();
+			double precioUnitarioCompra = cantidad>0?(precioCompra/cantidad):0;
+		
+			/*
+			 * calcula la utilidad obtenida por unidad de medida del producto
+			 */
+			double utilidad				= productos.getProducto().getPrecioEnMercado()-precioUnitarioCompra;
+			double utilidadObtenida		= utilidad>0?utilidad:0;
+			setUltimaUtilidadObtenida(utilidadObtenida);
+		
+			//calcula el precio C/1-Mg 
+			double precioUnitarioVenta = precioUnitarioCompra/(1-VariablesGlobales.MARGEN_GANANCIA_REQUERIDO_10);
+			
+			Dinero precioVenta = new Dinero(precioUnitarioVenta);		
+			tienda.AlmacenarProductos(productos, precioVenta);
+			//notifica observadores
+			this.OBSERVABLE.precioFijado(tienda.toString(), precioUnitarioVenta);
+			
+			//evalua la experiencia si hace parte de una nutrired
+			if(this.ActividadVigente instanceof ConformarNutrired){
+				this.juzgarMundoSegunEstandares();
+			}
+			
+		}
+		
 	}
 	
-	/**getter - setters **/
+	/**
+	 * Indica si el agente posee el producto para la venta
+	 * @param nombre producto a ser consultado
+	 * @return boolean <code>true</code> si el producto esta disponible <code>false</code> en caso contrario
+	 * 
+	 * TODO verificar en varias tiendas
+	 */
+	public boolean productoDisponible(String nombre){
+		/*
+		 * verifica solo en la primera tienda
+		 */
+		return this.Tiendas.get(0).consultarProducto(nombre);
+	}
 	
+	/**
+	 * Indica si el agente posee algun producto para la venta
+	 * @return booelan <code>true</code> si existen productos sin vender <code>false</code> en caso contrario
+	 * 
+	 * TODO verificar varios producto varias tiendas
+	 */
+	@Override
+	public boolean productosPendientesVenta(){
+		Producto prod = new Producto("cebolla");
+		return this.Tiendas.get(0).consultarProducto(prod.getNombre());		
+	}
+		
 	@Override
 	public void setActividadVigente(SistemaActividadHumana nuevaactividad) {
 		this.ActividadVigente = nuevaactividad;		
@@ -385,7 +613,6 @@ public class VendedorFinal implements AgenteInteligente, Demandante {
 	
 	@Override
 	public String getEstado() {
-		// TODO Auto-generated method stub
 		return this.Estado;
 	}	
 	
@@ -404,68 +631,74 @@ public class VendedorFinal implements AgenteInteligente, Demandante {
 	
 	@Override
 	public Double getMayorUtilidadObtenida() {
-		// TODO Auto-generated method stub
 		return MayorUtilidadObtenida;
 	}
 
 	@Override
 	public void setMayorUtilidadObtenida(Double valor) {
-		// TODO Auto-generated method stub
 		this.MayorUtilidadObtenida = valor;
 	}
 
 	@Override
 	public List<SistemaActividadHumana> getActividadesEjecutables() {
-		// TODO Auto-generated method stub
 		return ActividadesEjecutables;
 	}
 
 	@Override
 	public SistemaActividadHumana getActividadVigente() {
-		// TODO Auto-generated method stub
 		return ActividadVigente;
 	}
 
 	@Override
 	public Double getUltimaUtilidadObtenida() {
-		// TODO Auto-generated method stub
 		return UltimaUtilidadObtenida;
 	}
 
 	@Override
 	public void addExperiencia(simulaSAAB.comunicacion.Experiencia exp) {
-		// TODO Auto-generated method stub
 		if(exp!=null)
 			this.Experiencia.add(exp);
 	}
 
-
 	@Override
 	public void setEstado(String Estado) {
-		// TODO Auto-generated method stub
-		
+		this.Estado = Estado;
 	}
-
-
-	public simulaSAAB.comunicacion.Dinero getDinero() {
+	
+	@Override
+	public Dinero getDinero() {
 		return Dinero;
 	}
 
-
+	/**
+	 * asigna dinero al agente
+	 * @param dinero dinero a ser asignado al agente
+	 */
 	public void setDinero(simulaSAAB.comunicacion.Dinero dinero) {
 		Dinero = dinero;
 	}
 	
+	/**
+	 * Agrega una cantidad al dinero del agente
+	 * 
+	 * @param dinero double, cantidad a ser agregada al dinero del agente
+	 */
 	public void addDinero(Double dinero) {
 		Dinero.addCantidad(dinero);
 	}
 
-
+	/**
+	 * Devuelve un arreglo con las tiendas poseidas por el agente
+	 * @return List<Tienda>
+	 */
 	public List<Tienda> getTiendas() {
 		return Tiendas;
 	}
 
-
+	/**
+	 * Agrega una tienda al conjunto de tiendas poseidas por el agente
+	 * @param tienda
+	 */
 	public void addTienda(Tienda tienda) {
 		
 		if(Tiendas == null)
@@ -474,12 +707,12 @@ public class VendedorFinal implements AgenteInteligente, Demandante {
 		Tiendas.add(tienda);
 	}
 
-
+	@Override
 	public PlazaDistrital getPuntoDemanda() {
 		return puntoDemanda;
 	}
 
-
+	@Override
 	public void setPuntoDemanda(PlazaDistrital puntoDemanda) {
 		this.puntoDemanda = puntoDemanda;
 	}
@@ -487,6 +720,59 @@ public class VendedorFinal implements AgenteInteligente, Demandante {
 	@Override
 	public String printActividadVigente(){
 		return this.ActividadVigente.toString();
+	}
+	
+	/**
+	 * Clase anidada a la que se le delega la funcionalidad <code>obserbable</code> del agente <code>VendedorFinal</code>
+	 * 
+	 * @author jdvelezg
+	 */
+	public class PrecioFinalTrack extends AgentTrackObservable{
+		
+		private final String vendedorId;		
+		private Double tick;			
+		private String tienda;		
+		private String actividadEjecutada;		
+		private Double precioUnitarioFijado;
+		
+		public PrecioFinalTrack(){
+			super();
+			this.vendedorId = VendedorFinal.this.toString();
+		}
+		
+		/**
+		 * Obtiene los valores observados del agente {@link VendedorFinal}
+		 * 
+		 * @param tienda tienda en la que se fija el precio
+		 * @param precio precio fijado
+		 */
+		public void precioFijado(String tienda, double precio){
+			
+			this.tick					= RunEnvironment.getInstance().getCurrentSchedule().getTickCount();			
+			this.tienda					= tienda;		
+			this.actividadEjecutada 	= VendedorFinal.this.ActividadVigente.toString();		
+			this.precioUnitarioFijado	= new Double(precio);
+			
+			super.setChanged();
+			super.notifyObservers(this);
+		}
+
+		@Override
+		public String dataLineString(String separador) {
+			
+			return tick.toString()+separador+vendedorId+separador+actividadEjecutada+separador+tienda+separador+precioUnitarioFijado.toString()+separador;
+		}
+
+		@Override
+		public String dataLineStringHeader(String separador) {
+			
+			return "tick"+separador+"vendedorId"+separador+"actividad_ejecutada"+separador+"tienda_id"+separador+"precio_unitario_fijado"+separador;
+		}
+		
+	}
+	
+	public int getId(){
+		return this.id;
 	}
 
 }

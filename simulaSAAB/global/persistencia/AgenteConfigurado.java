@@ -1,23 +1,35 @@
 package simulaSAAB.global.persistencia;
 
 
-
+/**
+ * Persiste los datos de los agentes configurados, en tiempo de ejecución  
+ * @author lfgomezm
+ *
+ */
 public class AgenteConfigurado {
-	
+	/**
+	 * Identificador del agente
+	 */
 	private int id;
-	
+	/**
+	 * Clase de agente a configurar
+	 */
 	private String Tipo;
-	
+	/**
+	 * Tipo de entorno en el que es creado el agente
+	 */
 	private String EntornoInicial;
-	
+	/**
+	 * Número de agentes a agregar con las mismas caracteristicas dentro de la simulación
+	 */
 	private int cantidad;
 	
 
 	
 	/**
 	 * Constructor
-	 * @param tipo
-	 * @param cantidad
+	 * @param tipo string, tipo de agente
+	 * @param cantidad int, número de agentes a configurar
 	 */
 	public AgenteConfigurado(String tipo, int cantidad){
 		
@@ -62,7 +74,7 @@ public class AgenteConfigurado {
 	
 	/**
 	 * Constructor
-	 * @param tipo
+	 * @param tipo string, tipo de agente a crear
 	 */
 	public AgenteConfigurado(String tipo){
 		
@@ -114,56 +126,64 @@ public class AgenteConfigurado {
 	}
 
 	/**
-	 * @return the id
+	 * Devuelve el id de los agentes configurados
+	 * @return the id int, identificador de los agentes
 	 */
 	public int getId() {
 		return id;
 	}
 
 	/**
-	 * @param id the id to set
+	 * Asigna el id de los agentes configurados
+	 * @param id int, identificador a asignar
 	 */
 	public void setId(int id) {
 		this.id = id;
 	}
 
 	/**
-	 * @return the tipo
+	 * Devuelve el tipo de agente
+	 * @return tipo string, clase de agente
 	 */
 	public String getTipo() {
 		return Tipo;
 	}
 
 	/**
-	 * @param tipo the tipo to set
+	 * Asigna el tipo de agente 
+	 * @param tipo string, tipo de agente
 	 */
 	public void setTipo(String tipo) {
 		Tipo = tipo;
 	}
 
 	/**
-	 * @return the entornoInicial
+	 * Devuelve el entorno de inicio del agente
+	 * @return entornoInicial <code>string</code>,tipo de entorno en el que se crea el agente
 	 */
 	public String getEntornoInicial() {
 		return EntornoInicial;
 	}
 
 	/**
-	 * @param entornoInicial the entornoInicial to set
+	 * Asigna el entorno inicial del agente
+	 * @param entornoInicial <code>string</code>,tipo de entorno en el que se crea el agente
 	 */
 	public void setEntornoInicial(String entornoInicial) {
 		EntornoInicial = entornoInicial;
 	}
 
 	/**
-	 * @return the cantidad
+	 * Devuelve el número de agentes a configurar
+	 * @return cantidad int, número de agentes
 	 */
 	public int getCantidad() {
 		return cantidad;
 	}
 
 	/**
-	 * @param cantidad the cantidad to set
+	 * Asigna el número de agentes a cofigurar
+	 * @param cantidad <code>int</code>, número de agentes
 	 */
 	public void setCantidad(int cantidad) {
 		this.cantidad = cantidad;

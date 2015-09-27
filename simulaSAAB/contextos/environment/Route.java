@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 
+import org.geotools.referencing.GeodeticCalculator;
+
 import repast.simphony.space.graph.Network;
 import repast.simphony.space.graph.RepastEdge;
 import repast.simphony.space.graph.ShortestPath;
@@ -58,6 +60,8 @@ public class Route {
 	 * Indica si la ruta debe ser recorrida hacia adelante (Origen -> Destino) o hacia atras (Destino -> Origen)
 	 */
 	private boolean Forward;
+	
+	private int velocidad;
 
 	public Route(Coordinate origen, Coordinate destino) {
 		
@@ -67,6 +71,7 @@ public class Route {
 		this.totalLenght	= new Double(0);
 		this.routeX			= new ArrayList<Coordinate>();
 		Forward				= true;
+		velocidad			= 10;
 		
 	}
 	
@@ -126,18 +131,69 @@ public class Route {
 		Coordinate paso = routeX.get(currentPosition);
 		if(!(destination.equals(paso)) && Forward){
 			
-			currentPosition = (currentPosition+10)>(routeX.size()-1)?routeX.size()-1:currentPosition+10;
+			if((currentPosition+velocidad)>(routeX.size()-1)) 
+				return destination;
+			
+			currentPosition = (currentPosition+velocidad)>(routeX.size()-1)?(routeX.size()-1):currentPosition+velocidad;
 			
 		}else if(!(origin.equals(paso)) && !(Forward)){
 			
-			currentPosition = (currentPosition-10)<0?0:currentPosition-10;
+			if((currentPosition-velocidad)<0)
+				return origin;
+			
+			currentPosition = (currentPosition-velocidad)<0?0:currentPosition-velocidad;
+			
 		}else{
 			LOGGER.info("Ya esta en el destino");
 		}
 		
 		return this.routeX.get(currentPosition);
 	}
+
+	public int getVelocidad() {
+		return velocidad;
+	}
+
+	public void setVelocidad(int velocidad) {
+		this.velocidad = velocidad;
+	}
 	
-	
+	/**
+	 * Calculate the distance (in meters) between two Coordinates, using the coordinate reference system that the
+	 * roadGeography is using. For efficiency it can return the angle as well (in the range -0 to 2PI) if returnVals
+	 * passed in as a double[2] (the distance is stored in index 0 and angle stored in index 1).
+	 * 
+	 * @param c1
+	 * @param c2
+	 * @param returnVals
+	 *            Used to return both the distance and the angle between the two Coordinates. If null then the distance
+	 *            is just returned, otherwise this array is populated with the distance at index 0 and the angle at
+	 *            index 1.
+	 * @return The distance between Coordinates c1 and c2.
+	 */
+	public static synchronized double distance(Coordinate c1, Coordinate c2, double[] returnVals) {
+		// TODO check this now, might be different way of getting distance in new Simphony
+		GeodeticCalculator calculator = new GeodeticCalculator(SaabContextBuilder.SAABGeography.getCRS());
+		calculator.setStartingGeographicPoint(c1.x, c1.y);
+		calculator.setDestinationGeographicPoint(c2.x, c2.y);
+		double distance = calculator.getOrthodromicDistance();
+		if (returnVals != null && returnVals.length == 2) {
+			returnVals[0] = distance;
+			double angle = Math.toRadians(calculator.getAzimuth()); // Angle in range -PI to PI
+			// Need to transform azimuth (in range -180 -> 180 and where 0 points north)
+			// to standard mathematical (range 0 -> 360 and 90 points north)
+			if (angle > 0 && angle < 0.5 * Math.PI) { // NE Quadrant
+				angle = 0.5 * Math.PI - angle;
+			} else if (angle >= 0.5 * Math.PI) { // SE Quadrant
+				angle = (-angle) + 2.5 * Math.PI;
+			} else if (angle < 0 && angle > -0.5 * Math.PI) { // NW Quadrant
+				angle = (-1 * angle) + 0.5 * Math.PI;
+			} else { // SW Quadrant
+				angle = -angle + 0.5 * Math.PI;
+			}
+			returnVals[1] = angle;
+		}
+		return distance;
+	}
 
 }

@@ -12,18 +12,30 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Observable;
 import java.util.Observer;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
 
 import repast.simphony.engine.environment.RunEnvironment;
 import simulaSAAB.agentes.Productor;
+import simulaSAAB.agentes.VendedorFinal;
 import simulaSAAB.comunicacion.Demanda;
+import simulaSAAB.comunicacion.Experiencia;
 import simulaSAAB.comunicacion.Oferta;
 import simulaSAAB.comunicacion.OrdenDeCompra;
 import simulaSAAB.comunicacion.OrdenDePedido;
 import simulaSAAB.comunicacion.OrdenDeServicio;
 import simulaSAAB.global.persistencia.AgentTrackObservable;
+import simulaSAAB.inteligencia.Cerebro;
+import simulaSAAB.tareas.ComprarEnCorabastos;
 import simulaSAAB.tareas.ComprarEnTienda;
 import simulaSAAB.tareas.ComprarEnTienda.CompraTrack;
-
+import simulaSAAB.tareas.TransaccionComercial;
+/**
+ * Registra datos de la simulación haciendo uso del patrón <code>Observable</code>
+ * 
+ * @author jdvelezg
+ *
+ */
 public class DataCollector implements Observer{
 	
 	private boolean newExecFlag;
@@ -35,19 +47,33 @@ public class DataCollector implements Observer{
 	private int ordenpedidoCount;
 	private int ordenservicioCount;
 	private int compraCount;
-
+	private int cerebroCount;
+	private int transaccionCount;
+	private int experienciaCount;
+	private int precioFinalCount;
+	
+	/**
+	 * Constructor
+	 */
 	public DataCollector() {		
 		newExecFlag = true;
 	}
-	
+	/**
+	 * impide que al registrar los datos escriba la cabecera
+	 */
 	private void turnOffHeader(){
 		newExecFlag = false;
 	}
-	
+	/**
+	 * Configura el objeto para que al registrar la siguiente linea de datos implrima primero la cabecera
+	 */
 	private void turnOnHeader(){
 		newExecFlag = true;
 	}
-		
+	/**
+	 * Devuelve <code>true</code> si esta configurado para escribir la cabecera de lso datos en el siguiente registro
+	 * @return
+	 */
 	private boolean writeHeader(){
 		return newExecFlag;
 	}
@@ -93,13 +119,50 @@ public class DataCollector implements Observer{
 			
 				  ComprarEnTienda.CompraTrack observado = (ComprarEnTienda.CompraTrack)arg1;
 				  registrarCompra(observado);	
+				  
+		}else if(arg1 instanceof Cerebro.CerebroTrack){
+				  
+				  Cerebro.CerebroTrack observado = (Cerebro.CerebroTrack)arg1;
+				  registrarCerebro(observado);
+		}else if(arg1 instanceof TransaccionComercial.TransaccionTrack){
+				
+				TransaccionComercial.TransaccionTrack observado = (TransaccionComercial.TransaccionTrack)arg1;
+				registrarTransaccion(observado);
+		}else if(arg1 instanceof Experiencia.ExperienciaTrack){
+			
+				Experiencia.ExperienciaTrack observado = (Experiencia.ExperienciaTrack)arg1;
+				registrarExperiencia(observado);
+		}else if(arg1 instanceof VendedorFinal.PrecioFinalTrack){
+			
+				VendedorFinal.PrecioFinalTrack observado = (VendedorFinal.PrecioFinalTrack)arg1;
+				registrarPrecioFinal(observado);
+		}
+		else if(arg1 instanceof ComprarEnCorabastos.CorabastosTrack){
+			
+				ComprarEnCorabastos.CorabastosTrack observado = (ComprarEnCorabastos.CorabastosTrack)arg1;
+				registrarCompraCorabastos(observado);
 		}
 			  
 	}
 	
+	
+	/**
+	 * Guarda los datos de interes de la Decision
+	 * @param c CerebroTrack con los datos del cerebro que toma la decision
+	 */
+	private void registrarCerebro(Cerebro.CerebroTrack c){
+		
+		if(cerebroCount==0) turnOnHeader();
+		
+		String path	= VariablesGlobales.DECISIONES_DATOS_GENERADOS;				
+		guardaDatosCSV(path, c);
+		
+		cerebroCount++;
+	}
+	
 	/**
 	 * Guarda los datos de interes del Productor
-	 * @param p Datos del productor
+	 * @param p ProductorTrack con los datos del productor
 	 */
 	private void registrarProductor(Productor.ProductorTrack p){
 		
@@ -113,7 +176,7 @@ public class DataCollector implements Observer{
 	
 	/**
 	 * Guarda los datos de interes de la Oferta
-	 * @param o
+	 * @param o OfertaTrack con los datos de la oferta
 	 */
 	private void registrarOferta(Oferta.OfertaTrack o){
 		
@@ -127,7 +190,7 @@ public class DataCollector implements Observer{
 	
 	/**
 	 * Guarda los datos de interes de la Demanda
-	 * @param o
+	 * @param o DemandaTrack con los datos de la demanda
 	 */
 	private void registrarDemanda(Demanda.DemandaTrack o){
 		
@@ -141,7 +204,7 @@ public class DataCollector implements Observer{
 	
 	/**
 	 * Guarda los datos de interes de la Orden de Compra
-	 * @param o
+	 * @param o OrdenCompraTrack con los datos de la orden de compra
 	 */
 	private void registrarOrdenCompra(OrdenDeCompra.OrdenCompraTrack o){
 		
@@ -155,7 +218,7 @@ public class DataCollector implements Observer{
 	
 	/**
 	 * Guarda los datos de interes de la Orden de Pedido
-	 * @param o
+	 * @param o OrdenPedidoTrack con los datos de la orden de pedido
 	 */
 	private void registrarOrdenPedido(OrdenDePedido.OrdenPedidoTrack o){
 		
@@ -168,7 +231,8 @@ public class DataCollector implements Observer{
 	}
 	
 	/**
-	 * @param o
+	 * Guarda los datos de interes de la Orden de servicio
+	 * @param o OrdenServicioTrack con los datos de la orden
 	 */
 	private void registrarOrdenServicio(OrdenDeServicio.OrdenServicioTrack o){
 		
@@ -181,8 +245,8 @@ public class DataCollector implements Observer{
 	}
 	
 	/**
-	 * 
-	 * @param o
+	 * Guarda los datos de interes al momento de una compra en tienda
+	 * @param o CompraTrack con los datos de la compra
 	 */
 	private void registrarCompra(ComprarEnTienda.CompraTrack o){
 		
@@ -195,10 +259,66 @@ public class DataCollector implements Observer{
 	}
 	
 	/**
+	 * Guarda los datos de interes al momento de una compra en corabastos
+	 * @param o CorabastosTrack con los datos de la compra
+	 */
+	private void registrarCompraCorabastos(ComprarEnCorabastos.CorabastosTrack o){
+		
+		if(this.compraCount==0) turnOnHeader();
+		  
+		String path	= VariablesGlobales.COMPRAS_DATOS_GENERADOS;
+		guardaDatosCSV(path, o);
+		
+		this.compraCount++;
+	}
+	
+	/**
+	 * Guarda los datos de interes al momento de una trnasacción comercial
+	 * @param t TransaccionTrack con los datos de la transacción
+	 */
+	private void registrarTransaccion(TransaccionComercial.TransaccionTrack t){
+		
+		if(this.transaccionCount==0) turnOnHeader();
+		  
+		String path	= VariablesGlobales.TRANSACCIONES_DATOS_GENERADOS;
+		guardaDatosCSV(path, t);
+		
+		this.transaccionCount++;
+	}
+	
+	/**
+	 * Guarda los datos de interes al crear una experiencia
+	 * @param e ExperienciaTrack con los datos de la experiencia
+	 */
+	private void registrarExperiencia(Experiencia.ExperienciaTrack e){
+		
+		if(this.experienciaCount==0) turnOnHeader();
+		  
+		String path	= VariablesGlobales.EXPERIENCIA_DATOS_GENERADOS;
+		guardaDatosCSV(path, e);
+		
+		this.experienciaCount++;
+	}
+	
+	/**
+	 * Guarda los datos de interes al registrar un precio final 
+	 * @param p PrecioFinalTrack con los datos del precio asignado
+	 */
+	private void registrarPrecioFinal(VendedorFinal.PrecioFinalTrack p){
+		
+		if(this.precioFinalCount==0) turnOnHeader();
+		  
+		String path	= VariablesGlobales.PRECIO_FINAL_DATOS_GENERADOS;
+		guardaDatosCSV(path, p);
+		
+		this.precioFinalCount++;
+	}
+	
+	/**
 	 * Escribe los datos separados por comas, en un archivo plano.
 	 * 
 	 * @param filePath Ruta del archivo.
-	 * @param data cadena de datos a escribir en el archivo.
+	 * @param data string, cadena de datos a escribir en el archivo.
 	 */
 	private void guardaDatosCSV(String filePath, AgentTrackObservable observado){
 		
@@ -209,7 +329,7 @@ public class DataCollector implements Observer{
 		
 		//escribe la cabecera
 		if(writeHeader()){
-			hline = observado.dataLineStringHeader(";")+"\n";
+			hline = "\n"+observado.dataLineStringHeader(";")+"\n";
 			turnOffHeader();
 		}
 		
@@ -220,7 +340,7 @@ public class DataCollector implements Observer{
 			
 			try (BufferedWriter writer = Files.newBufferedWriter(filepath, charset, StandardOpenOption.APPEND)) {			
 			    writer.write(data);
-			    writer.close();
+			    //writer.close();
 			} catch (IOException x) {			
 			    System.err.format("IOException: %s%n", x);
 			}
@@ -229,12 +349,13 @@ public class DataCollector implements Observer{
 			
 			try (BufferedWriter writer = Files.newBufferedWriter(filepath, charset)) {			
 			    writer.write(data);		
-			    writer.close();
+			    //writer.close();
 			} catch (IOException x) {			
 			    System.err.format("IOException: %s%n", x);
 			}
 		}		
 	}
+	
 	
 	/**
 	 * Escribe datos en un archivo
@@ -251,7 +372,7 @@ public class DataCollector implements Observer{
 			
 			try (BufferedWriter writer = Files.newBufferedWriter(filepath, charset, StandardOpenOption.APPEND)) {			
 			    writer.write(datos);
-			    writer.close();
+			    //writer.close();
 			} catch (IOException x) {			
 			    System.err.format("IOException: %s%n", x);
 			}
@@ -260,7 +381,7 @@ public class DataCollector implements Observer{
 			
 			try (BufferedWriter writer = Files.newBufferedWriter(filepath, charset)) {			
 			    writer.write(datos);
-			    writer.close();
+			    //writer.close();
 			} catch (IOException x) {			
 			    System.err.format("IOException: %s%n", x);
 			}

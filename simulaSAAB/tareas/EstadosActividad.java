@@ -4,7 +4,7 @@ package simulaSAAB.tareas;
  * Enumerador que define los posibles estados de un sistema de actividad
  * con propósito definido.
  * 
- * @author dampher
+ * @author lfgomezm
  *
  */
 public enum EstadosActividad {
@@ -22,7 +22,7 @@ public enum EstadosActividad {
 	 */
 	RUNNING,
 	/**
-	 * El sistema de actividad fué completado
+	 * El sistema de actividad fue completado
 	 */
 	DONE
 

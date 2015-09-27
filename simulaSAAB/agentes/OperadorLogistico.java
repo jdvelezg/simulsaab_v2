@@ -24,8 +24,10 @@ import simulaSAAB.comunicacion.OrdenDeServicio;
 import simulaSAAB.contextos.AmbienteLocal;
 import simulaSAAB.contextos.CentroUrbano;
 import simulaSAAB.contextos.NodoSaab;
+import simulaSAAB.contextos.ObjetoMovil;
 import simulaSAAB.contextos.SaabContextBuilder;
 import simulaSAAB.contextos.environment.Junction;
+import simulaSAAB.tareas.DespacharProductos;
 import simulaSAAB.tareas.ProducirCebollaBulbo;
 import simulaSAAB.tareas.RecolectarProductos;
 import simulaSAAB.tareas.SistemaActividadHumana;
@@ -38,38 +40,56 @@ import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
 
+
+/**
+ * Representa al agente Operador Logístico
+ * <p>
+ * Agente Reactivo que encapsula el comportamiento de los operadores logísticos adscritos al sistema de abastecimiento alimentario
+ * 
+ * @author jdvelezg
+ *
+ */
 public class OperadorLogistico implements AgenteReactivo {
-	
+	/**
+	 * Registro de la clase usado para depuración <code>Debugging</code>
+	 */
 	private static Logger LOGGER = Logger.getLogger(OperadorLogistico.class.getName());
-	
+	/**
+	 * {@link SistemaActividadHumana} usado por el agente para el transporte de <code>Productos</code>
+	 */
 	private SistemaActividadHumana TransportarProductos;
 	
 	private SistemaActividadHumana Moverse;
 	
 	/**
-	 * Constructor
+	 * Constructor de la clase
 	 */
 	public OperadorLogistico() {
 		
 	}
 	
 	/**
-	 * 
+	 * Ejecuta el comportamiento por defecto del agente
+	 * <p>
+	 * Verifica cada 100 ciclos <code>Ticks</code> los pedidos generados en el <code>SISAAB</code>
+	 * <p>
+	 * <code>start = 1000, interval = 100</code>
 	 */
-	@ScheduledMethod (start = 24, interval = 24)
+	@ScheduledMethod (start = 1000, interval = 100)
 	public void step(){
-		
+				
 		IndexedIterable<Object> ordenes 	= SaabContextBuilder.OrdenesContext.getObjects(OrdenDeServicio.class);
-		IndexedIterable<Object> nodos 		= SaabContextBuilder.SISAABContext.getObjects(NodoSaab.class);		
+		IndexedIterable<Object> nodos 		= SaabContextBuilder.SISAABContext.getObjects(NodoSaab.class);
 		/*
 		 * Revisa el SISAAB, Si se generaron ordenes de servicio, 
 		 * las procesa, recogiendo los productos y entregandolos
 		 * al nodo logistico más cercano
 		 */
 		if(ordenes.size()>0){
+			//LOGGER.info("ordenes a procesar: "+ordenes.size());
 			atenderOrdenDeServicio(ordenes);
 		}else{
-			LOGGER.log(Level.INFO,"OPER-DONE-NOTH; ordenes: "+ordenes.size());
+			//LOGGER.log(Level.INFO,"OPER-DONE-NOTH; ordenes: "+ordenes.size());
 		}		
 		/*
 		 * Revisa cada nodo logístico. Si ha recibido ordenes de servicio,
@@ -78,18 +98,33 @@ public class OperadorLogistico implements AgenteReactivo {
 		for(Object o: nodos){
 			
 			NodoSaab nodo = (NodoSaab)o;
-			List<OrdenDeServicio> servicios = nodo.getOrdenes();
-			
-			if(servicios.size()>0){
-				LOGGER.log(Level.INFO," despacha orden servicio: "+servicios.size());
-				despacharPedido(nodo, servicios);
-			}
-		}
-		
+			if(nodo.ordenesPendientes()){
+				
+				List<OrdenDeServicio> servicios = nodo.pollOrdenes();				
+				if(servicios.size()>0)				
+					despacharPedido(nodo, servicios);				
+			}		
+		}//EndFor		
+				
 	}
 	
 	/**
-	 * obtiene las ordenes de servicio logistico generadas por el SISAAB y las procesa
+	 * Remueve del contexto las ordenes atendidas para liberar memoria
+	 * 
+	 * @param ordenes ordenes a purgar
+	 *
+	private void purgeOrdenServicio(Iterator<Object> ordenes){
+		
+		while(ordenes.hasNext()){			
+			OrdenDeServicio orden 	= (OrdenDeServicio)ordenes.next();			
+			if(!(orden.isPendiente()))
+				SaabContextBuilder.OrdenesContext.remove(orden);			
+		}
+	}*/
+	
+	/**
+	 * Obtiene las ordenes de servicio logistico generadas por el SISAAB y las procesa
+	 * @param ordenes IndexedIterable<Object> con las ordenes a procesar
 	 */
 	public synchronized void atenderOrdenDeServicio(IndexedIterable<Object> ordenes){
 		
@@ -98,25 +133,32 @@ public class OperadorLogistico implements AgenteReactivo {
 		//obtiene las ordenes de serviciologistico
 		//IndexedIterable<Object> ordenes = OrdenesContext.getObjects(OrdenDeServicio.class);
 		
+		int x =0;
 		//Agrupa las ordenes por punto de oferta (CentroUrbano)
 		for(Object obj: ordenes){
-			
-			OrdenDeServicio orden 	= (OrdenDeServicio)obj;
+									
+			OrdenDeServicio orden 	= (OrdenDeServicio)obj;			
 			CentroUrbano origen 	= orden.getOrigen();
 			
-			if(AgendaRecoleccion.containsKey(origen)){
+			if(orden.isPendiente()){
 				
-				List<OrdenDeServicio> list = AgendaRecoleccion.get(origen);
-				list.add(orden);				
-				
+				if(AgendaRecoleccion.containsKey(origen)){
+					
+					List<OrdenDeServicio> list = AgendaRecoleccion.get(origen);
+					list.add(orden);	
+					
+				}else{
+					
+					List<OrdenDeServicio> list = new ArrayList<OrdenDeServicio>();
+					list.add(orden);
+					AgendaRecoleccion.put(origen, list);
+				}
+				orden.setAtendida(); x++;
 			}else{
 				
-				List<OrdenDeServicio> list = new ArrayList<OrdenDeServicio>();
-				list.add(orden);
-				AgendaRecoleccion.put(origen, list);
 			}
 		}//end Foreach
-		
+	//LOGGER.info(RunEnvironment.getInstance().getCurrentSchedule().getTickCount()+" ordenes procesadas: "+x);
 		//Recolecta productos
 		Set<CentroUrbano> pueblos = AgendaRecoleccion.keySet();
 		
@@ -127,24 +169,26 @@ public class OperadorLogistico implements AgenteReactivo {
 	}
 	
 	/**
-	 * Moviliza un agente <code>Camion</code> de cada nodo saab correspondiente al centro urbano de la Oferta
-	 * El agente recoge los productos y vuelve al nodo logistico.
-	 * Transitar ida y vuelta.
-	 * @param orden
+	 * Crea un agente <code>Camion</code> con la finalidad de recoger los productos asociados a las ordenes pasadas como parámetro 
+	 * 
+	 * @param puntoOferta centroUrbano al que se debe movilizar el agente camion para recoger los productos
+	 * @param ordenes ordenes de servicio que describen el producto a transportar
 	 */
 	private void recolectarProductos(CentroUrbano puntoOferta, List<OrdenDeServicio> ordenes){
 		
 		Coordinate origen	= puntoOferta.getNodosSaab().get(0).getRoadAccess();
-		LOGGER.log(Level.INFO," punto de Oferta: "+puntoOferta.getNombre()+" acceso: "+origen.toString());
+		//LOGGER.log(Level.INFO," punto de Oferta: "+puntoOferta.getNombre()+" acceso: "+origen.toString());
 		RecolectarProductos actividad = new RecolectarProductos(puntoOferta.getNodosSaab().get(0),puntoOferta,ordenes);
 		
-		//crearTransporte(origen, actividad);		
+		Camion transporte = new Camion();
+		crearTransporte(transporte,origen, actividad);		
 	}
 	
 	/**
-	 * Moviliza un agente <code>Camion</code> del nodo saab correspondiente a la plaza distrital.
-	 * El agente despacha los productos.
-	 * @param orden
+	 * Moviliza un agente <code>Camion</code> de un <code>nodo saab</code> a una <code>plaza distrital</code>
+	 * 
+	 * @param nodoOrigen NodoSaab desde el cual el agente <code>camion</code> debe iniciar el movimiento
+	 * @param ordenes arreglo de <code>OrdenDeServicio</code> que describen los productos a transportar
 	 */
 	private void despacharPedido(NodoSaab nodoOrigen, List<OrdenDeServicio> ordenes){
 		
@@ -177,23 +221,22 @@ public class OperadorLogistico implements AgenteReactivo {
 			Coordinate origen	= nodoOrigen.getRoadAccess();
 			Coordinate destino = plaza.getRoadAccess();	
 			
-			SistemaActividadHumana actividad = new Transitar(origen,destino);
+			DespacharProductos actividad = new DespacharProductos(nodoOrigen,plaza,AgendaDespacho.get(plaza));
 			
-			//crearTransporte(origen,actividad);
+			Camion transporte = new Camioneta();
+			crearTransporte(transporte,origen,actividad);
 		}
 	}
 
 	/**
-	 * Crea un agente <code>Camion</code> y lo registra en el contexto y proyeccion GIS.
-	 * El agente ejecutara la tarea de transitar del origen al destino.
-	 * @param origen
-	 * @param destino
-	 * @param circular
+	 * Configura un agente <code>Camion</code> y lo registra en el contexto y proyeccion GIS.
+	 *
+	 * @param transporte Camion agente a configurar
+	 * @param origen Coordinate de origen del movimiento del agente <code>Camion</code>
+	 * @param actividad SistemaActividadHumana que encapsula las acciones de transporte del agente <code>camion</code>
 	 */
-	private void crearTransporte(Coordinate origen, SistemaActividadHumana actividad){
-		
-		//crea un agente camion
-		Camion transporte = new Camion();
+	private void crearTransporte(Camion transporte, Coordinate origen, SistemaActividadHumana actividad){
+			
 		GeometryFactory geofact = new GeometryFactory();
 		Point geom = geofact.createPoint(new Coordinate(origen.x,origen.y));
 		transporte.setGeometria(geom);
@@ -214,9 +257,6 @@ public class OperadorLogistico implements AgenteReactivo {
 		ISchedule sch = RunEnvironment.getInstance().getCurrentSchedule();
 		sch.schedule(params, transporte, "step");		
 	}
-	
-	
-	
 	
 
 }

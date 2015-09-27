@@ -13,19 +13,30 @@ import simulaSAAB.comunicacion.Producto;
 import simulaSAAB.comunicacion.Proposito;
 
 /**
- * @author dampher
+ * Representa el comportamiento de un agente humano activo 
+ * @author lfgomezm
  *
  */
 public class ProcesoAgenteHumano implements SistemaActividadHumana<AgenteInteligente> {
-	
+	/**
+	 * Registro de la clase usado para depuración <code>Debugging</code>
+	 */
 	private static Logger LOGGER = Logger.getLogger(ProcesoAgenteHumano.class.getName());
-	
+	/**
+	 * Establece el enunciado de la tarea
+	 */
 	private static String ENUNCIADO = "Proceso modelo de un agente humano activo en el mundo";
-	
+	/**
+	 * Propósito de la tarea
+	 */
 	private Proposito Proposito;
-	
+	/**
+	 * Estado actual de la tarea
+	 */
 	private String Estado;
-	
+	/**
+	 * Paso actual de la tarea
+	 */
 	private int paso;
 
 	/**
@@ -48,7 +59,7 @@ public class ProcesoAgenteHumano implements SistemaActividadHumana<AgenteIntelig
 			
 			this.Estado	=EstadosActividad.RUNNING.toString();
 			this.paso	=1;
-			//LOGGER.log(Level.INFO, "Actor: "+actor.toString());
+			//LOGGER.log(Level.INFO, " Inicia Actor: "+actor.toString());
 		}
 		else if(this.Estado.equalsIgnoreCase(EstadosActividad.RUNNING.toString())){
 			
@@ -110,7 +121,10 @@ public class ProcesoAgenteHumano implements SistemaActividadHumana<AgenteIntelig
 	
 		return this.paso;
 	}
-	
+	/**
+	 * Asigna el estado y paso de la tarea en conformidad con el paso actual
+	 * @param paso int, número de pasos ejecutados
+	 */
 	public void setPaso(int paso){
 		
 		if(paso==0)
@@ -138,6 +152,19 @@ public class ProcesoAgenteHumano implements SistemaActividadHumana<AgenteIntelig
 	
 		return Proposito;
 	}
+
+	@Override
+	public int getId() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public double getCosto() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+	
 	
 	
 

@@ -4,32 +4,68 @@ import java.util.Iterator;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
+import com.vividsolutions.jts.geom.Geometry;
 
 import repast.simphony.engine.environment.RunEnvironment;
 import repast.simphony.random.RandomHelper;
+import repast.simphony.util.collections.IndexedIterable;
 import simulaSAAB.agentes.Consumidor;
 import simulaSAAB.agentes.Tienda;
+import simulaSAAB.comunicacion.Dinero;
 import simulaSAAB.comunicacion.OrdenDePedido;
 import simulaSAAB.comunicacion.Proposito;
+import simulaSAAB.comunicacion.Recurso;
 import simulaSAAB.contextos.SaabContextBuilder;
+import simulaSAAB.global.VariablesGlobales;
 import simulaSAAB.global.persistencia.AgentTrackObservable;
-
+import simulaSAAB.global.persistencia.MPAConfigurado;
+/**
+ * Representa la compra de productos por parte de un consumidor final en una tienda
+ * @author lfgomezm
+ *
+ */
 public class ComprarEnTienda implements SistemaActividadHumana<Consumidor> {
+	/**
+	 * Identificador de la transacción
+	 */
+	private final Integer id;
+	/**
+	 * Enunciado de la tarea
+	 */
+	private final String Enunciado;
+	/**
+	 * Propósito de la tarea
+	 */
+	private final Proposito proposito;
 	
+	private final Double CostoEjecucion;
+	/**
+	 * Rango de búsqueda de tiendas para un agente
+	 */
 	private Double distanciaBusqueda;
 	
 	private Moverse moverse;
-	
-	private Iterator<Tienda> tiendasCercanas;
-	
+	/**
+	 * Objetos de tipo tienda identificados dentro del rango de búsqueda
+	 */
+	private IndexedIterable<Object> tiendasCercanas;
+	/**
+	 * Tienda seleccionada para realizar la compra
+	 */
 	private Tienda destino;
-	
+	/**
+	 * Punto de ubicación origen del agente
+	 */
 	private Coordinate origen;
-	
+	/**
+	 * Estado actual de la tarea
+	 */
 	private String Estado;
-	
+	/**
+	 * Paso actual de la tarea
+	 */
 	private int paso;
-	
+
 	public CompraTrack OBSERVABLE;
 	
 	/**
@@ -37,98 +73,97 @@ public class ComprarEnTienda implements SistemaActividadHumana<Consumidor> {
 	 */
 	public ComprarEnTienda() {
 		
-		distanciaBusqueda= new Double(10);
+		MPAConfigurado mpa 	=new MPAConfigurado("ComprarEnTienda");
+		
+		this.id				= mpa.getId();
+		this.Enunciado		= mpa.getEnunciado();
+		this.proposito 		= mpa.getProposito();
+		this.CostoEjecucion	= mpa.getCosto();
+		
+		distanciaBusqueda= new Double(VariablesGlobales.DISTANCIA_BUSQUEDA_NUTRIRED_ANGULAR);
+		
+		this.Estado = EstadosActividad.READY.toString();
+		OBSERVABLE 	= new CompraTrack();
 	}
 
 	@Override
-	public void secuenciaPrincipalDeAcciones(Consumidor actor) {
+	public synchronized void secuenciaPrincipalDeAcciones(Consumidor actor) {
 		
-		if(this.Estado.equalsIgnoreCase(EstadosActividad.READY.toString())){			
+		if(this.Estado.equalsIgnoreCase(EstadosActividad.READY.toString())){						
+									
+			Envelope actorEnvelope 	= SaabContextBuilder.SAABGeography.getGeometry(actor).getEnvelopeInternal();
+			actorEnvelope.expandBy(distanciaBusqueda);			
+			tiendasCercanas = SaabContextBuilder.BogotaContext.getObjects(Tienda.class);
 			
 			Estado	=EstadosActividad.RUNNING.toString();
-			paso	=1;
-			
-			Envelope actorEnvelope 	= SaabContextBuilder.SAABGeography.getGeometry(actor).getEnvelopeInternal();
-			actorEnvelope.expandBy(distanciaBusqueda);
-			
-			tiendasCercanas = SaabContextBuilder.SAABGeography.queryInexact(actorEnvelope, Tienda.class).iterator();
-			
-			
+			paso	=1;			
 		}
 		else if(this.Estado.equalsIgnoreCase(EstadosActividad.RUNNING.toString())){
 			
-			switch(paso){
-			
-			case 1:
-				
+			switch(paso){			
+			case 1:	
 				
 				/*
 				 * Escoge la primera tienda del iterador
 				 * 
-				 * TODO Actuar como agente inteligente escogiendo la tienda que mayores benmeficios le ofrezca.
+				 * TODO Actuar como agente inteligente escogiendo la tienda que mayores beneficios le ofrezca.
 				 */
-				if(tiendasCercanas.hasNext()){
+				int index = RandomHelper.nextIntFromTo(0, tiendasCercanas.size()-1);
+								
+				Tienda t 			= (Tienda)tiendasCercanas.get(index);					
+				Coordinate destino 	= t.getGeometria().getCoordinate();
+				moverse 			= new Moverse(destino);					
+				this.destino 		= t;
+				
+				Geometry geom		= SaabContextBuilder.SAABGeography.getGeometry(actor);
+				this.origen	 		= new Coordinate(geom.getCoordinate().x, geom.getCoordinate().y);
+				paso++;
 					
-					Tienda t = tiendasCercanas.next();					
-					Coordinate destino = t.getGeometria().getCoordinate();
-					moverse = new Moverse(destino);
-					
-					this.destino 	= t;
-					this.origen		= SaabContextBuilder.SAABGeography.getGeometry(actor).getCoordinate();
-					paso++;
-					
-				}else{
-					/*
-					 * Reinicia el estado para que el "Envelope" del agente sea extendido a un rango mas grande
-					 * y encuentre una tienda cercana
-					 */
-					distanciaBusqueda +=5;
-					this.Estado = EstadosActividad.READY.toString();
-				}
+				
 				
 			break;			
 			case 2:				
 				moverse.secuenciaPrincipalDeAcciones(actor);
 				
-				if(moverse.getEstado().equalsIgnoreCase(EstadosActividad.DONE.toString())){
+				if(moverse.getEstado().equalsIgnoreCase(EstadosActividad.DONE.toString()))
 					paso++;
-				}
+				
 				
 			break;			
-			case 3:
+			case 3: 
 				//TODO Actuar como agente inteligente escogiendo los productos que necesita
 				
 				String producto = "Cebolla de Bulbo";
-				Double cantidad = RandomHelper.nextDoubleFromTo(1, 10);
+				/*
+				 * La cantidad de Kilos a comprar
+				 * TODO la cantidad es irreal para un consumidor promedio.
+				 * Se desproporciona, para acelerar el proceso de recuperacion econÃ³mica del agente Vendedor Final
+				 */
+				Double cantidad = RandomHelper.nextDoubleFromTo(5000, 15000);
+				Dinero pago		= actor.getDinero();
 				
-				this.destino.venderProducto(producto, cantidad);
-				//Actualiza el observador
-				OBSERVABLE = new CompraTrack();
-				OBSERVABLE.compraEfectuada(producto, cantidad);
-				paso++;
-				
+				Recurso compra 	= this.destino.venderProducto(producto, cantidad, pago);
+				//Actualiza el observador				
+				OBSERVABLE.compraEfectuada(producto, cantidad, compra);
+				paso++;		
+						
 			break;
 			case 4:
-				/*
-				 * devuelve al actor a su lugar de origen.
-				 * 
-				 * TODO el agente vuelve  de un salto, Deberia moverse de vuelta progresivamente
-				 */
+							
 				Coordinate c = SaabContextBuilder.SAABGeography.getGeometry(actor).getCoordinate();
-				c.x = this.origen.x;
-				c.y = this.origen.y;
-				SaabContextBuilder.SAABGeography.move(actor, actor.getGeometria());
+				c.x = origen.x;
+				c.y = origen.y;
+				
+				paso++;
 			break;
 			default:								
-				this.Estado ="DONE";
-			}
-			
-				
+				this.Estado =EstadosActividad.DONE.toString();
+			}			
 		}
 		else if(this.Estado.equalsIgnoreCase(EstadosActividad.DONE.toString())){			
 			//fija estado del actor en IDLE
-			actor.setEstado("IDLE");				
-		}	
+			actor.setEstado("IDLE"); 				
+		}
 		
 		
 	}
@@ -162,10 +197,38 @@ public class ComprarEnTienda implements SistemaActividadHumana<Consumidor> {
 		// TODO Auto-generated method stub
 		return null;
 	}
+		
+	public int getId() {
+		return id;
+	}
 	
+	@Override
+	public double getCosto() {
+		return this.CostoEjecucion;
+	}
+	
+	@Override 
+	public boolean equals(Object obj){
+		
+		if(obj instanceof SistemaActividadHumana){
+			
+			SistemaActividadHumana act = (SistemaActividadHumana)obj;			
+			return this.id==act.getId();
+		}else{
+			return false;
+		}
+	}
+
+	/**
+	 * Clase anidada a la que se le delega la funcionalidad <code>observable</code> 
+	 * de la clase <code>ComprarEnTienda</code>
+	 * @author lfgomezm
+	 *
+	 */
 	public class CompraTrack extends AgentTrackObservable{
 		
-		private final Tienda Tienda;
+		private String tendero;
+		private String Tienda;
 		private Double tick;		
 		private String vendedorID;
 		private String producto;
@@ -177,9 +240,7 @@ public class ComprarEnTienda implements SistemaActividadHumana<Consumidor> {
 		 * Constructor
 		 */
 		public CompraTrack(){
-			super();
-			this.Tienda 	= ComprarEnTienda.this.destino;
-			this.vendedorID	= Tienda.getPropietario().toString();			
+			super();						
 		}
 		
 		/**
@@ -187,28 +248,34 @@ public class ComprarEnTienda implements SistemaActividadHumana<Consumidor> {
 		 * 
 		 * @param producto nombre del producto comprado
 		 * @param precioUnitario precio unitario del producto en la tienda
-		 * @param cantidad cantidad comprada
+		 * @param cantidad double, cantidad comprada
 		 */
-		public void compraEfectuada(String producto, double cantidad){
+		public void compraEfectuada(String producto, double cantidad, Recurso compra){
 			
 			this.tick			= RunEnvironment.getInstance().getCurrentSchedule().getTickCount();
+			this.tendero		= ComprarEnTienda.this.destino.getPropietario().toString();
+			this.Tienda 		= ComprarEnTienda.this.destino.toString();
+			this.vendedorID		= ComprarEnTienda.this.destino.getPropietario().toString();
 			this.producto 		= producto;
-			this.precioUnitario	= this.Tienda.consultarPrecioUnitario(producto).getCantidad();
+			this.cantidad		= compra.getCantidad();
+			this.precioUnitario	= compra.getCostoUnitario();
 			
-			super.setChanged();
-			super.notifyObservers(this);
+			if(this.cantidad !=0){
+				super.setChanged();
+				super.notifyObservers(this);
+			}			
 		}
 		
 		@Override
 		public String dataLineString(String separador) {
 			
-			return tick+separador+Tienda.toString()+separador+vendedorID+separador+producto+separador+precioUnitario+separador+cantidad+separador;
+			return tick.toString()+separador+tendero+separador+Tienda.toString()+separador+vendedorID+separador+producto+separador+precioUnitario.toString()+separador+cantidad.toString()+separador;
 		}
 
 		@Override
 		public String dataLineStringHeader(String separador) {
 			
-			return "Tick"+separador+"Tienda"+separador+"Vendedor_ID"+separador+"Producto"+separador+"Precio_Unitario"+separador+"cantidad"+separador;
+			return "Tick"+separador+"Tendero"+separador+"Tienda"+separador+"Vendedor_ID"+separador+"Producto"+separador+"Precio_Unitario"+separador+"cantidad"+separador;
 		}
 		
 		

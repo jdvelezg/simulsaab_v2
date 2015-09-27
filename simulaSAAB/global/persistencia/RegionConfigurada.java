@@ -6,28 +6,48 @@ import java.util.List;
 import simulaSAAB.tareas.SistemaActividadHumana;
 import simulaSAAB.tareas.ProducirCebollaBulbo;
 
-
+/**
+ * Persiste las regiones que fueron configuradas en tiempo de ejecución de la simulación
+ * @author lfgomezm
+ *
+ */
 public class RegionConfigurada {
-	
+	/**
+	 * Identificador de la región configurada
+	 */
 	private int id;
-	
+	/**
+	 * Nombre de la región configurada
+	 */
 	private String nombre;
-	
+	/**
+	 * Tipo de entorno en el que se configura la región
+	 */
 	private String TipoEntorno;
-	
+	/**
+	 * Anillo del <code>SAAB</code> donde se configura la región
+	 */
 	private int AnilloSAAB;
-	
+	/**
+	 * Coordenadas de ubicación de la región configurada
+	 */
 	private String Coordenadas;
-
+	/**
+	 * Nombre del clima en el que produce el producto
+	 */
 	private String Clima;
-	
+	/**
+	 * Nombre del piso térmico en el que se produce el producto
+	 */
 	private String PisoTermico;
-	
+	/**
+	 * Listado de actividades humanas ejecutables
+	 */
 	private List<SistemaActividadHumana> ActividadesEjecutables;
 	
 	/**
 	 * Constructor
-	 * @param nombre
+	 * @param nombre <code>string</code>, nombre de la región configurada
 	 */
 	public RegionConfigurada(String nombre){
 		
@@ -184,98 +204,112 @@ public class RegionConfigurada {
 	
 	
 	/**
-	 * @return the id
+	 * Devuelve el identificador de la región 
+	 * @return id <code>int</code>, identificador numérico de la región configurada
 	 */
 	public int getId() {
 		return id;
 	}
 
 	/**
-	 * @param id the id to set
+	 * Asigna el identificador de la región 
+	 * @param id <code>int</code>, identificador numérico de la región configurada
 	 */
 	public void setId(int id) {
 		this.id = id;
 	}
 
 	/**
-	 * @return the nombre
+	 * Devuelve el nombre de la región configurada
+	 * @return nombre <code>string</code>, nombre de la región 
 	 */
 	public String getNombre() {
 		return nombre;
 	}
 
 	/**
-	 * @param nombre the nombre to set
+	 * Asigna el nombre de la región configurada
+	 * @param nombre <code>string</code>, nombre de la región 
 	 */
 	public void setNombre(String nombre) {
 		this.nombre = nombre;
 	}
 
 	/**
-	 * @return the tipoEntorno
+	 * Asigna el tipo de entorno en el que se configura la región 
+	 * @return tipoEntorno  <code>string</code>, nombre del entorno en el que se ubica la región 
 	 */
 	public String getTipoEntorno() {
 		return TipoEntorno;
 	}
 
 	/**
-	 * @param tipoEntorno the tipoEntorno to set
+	 * Asigna el tipo de entorno en el que se configura la región 
+	 * @param tipoEntorno  <code>string</code>, nombre del entorno en el que se ubica la región 
 	 */
 	public void setTipoEntorno(String tipoEntorno) {
 		TipoEntorno = tipoEntorno;
 	}
 
 	/**
-	 * @return the anilloSAAB
+	 * Devuelve el número del anillo en el que se encuentra la región 
+	 * @return anilloSAAB <code>int</code>, anillo del <code>SAAB</code> en el que se encuentra la región configurada
 	 */
 	public int getAnilloSAAB() {
 		return AnilloSAAB;
 	}
 
 	/**
-	 * @param anilloSAAB the anilloSAAB to set
+	 * Asigna el número del anillo en el que se encuentra la región 
+	 * @param anilloSAAB <code>int</code>, anillo del <code>SAAB</code> en el que se encuentra la región configurada
 	 */
 	public void setAnilloSAAB(int anilloSAAB) {
 		AnilloSAAB = anilloSAAB;
 	}
 
 	/**
-	 * @return the coordenadas
+	 * Devuelve las coordenadas de la región 
+	 * @return coordenadas <code>string</code>, coordenadas de ubicación de la región 
 	 */
 	public String getCoordenadas() {
 		return Coordenadas;
 	}
 
 	/**
-	 * @param coordenadas the coordenadas to set
+	 * Asigna las coordenadas de la región 
+	 * @param coordenadas <code>string</code>, coordenadas de ubicación de la región 
 	 */
 	public void setCoordenadas(String coordenadas) {
 		Coordenadas = coordenadas;
 	}
 
 	/**
-	 * @return the clima
+	 * Devuelve el nombre del clima en el que puede ser producido el producto seleccionado
+	 * @return clima <code>string</code>, nombre del clima
 	 */
 	public String getClima() {
 		return Clima;
 	}
 
 	/**
-	 * @param clima the clima to set
+	 * Asigna el nombre del clima en el que puede ser producido el producto seleccionado
+	 * @param clima <code>string</code>, nombre del clima
 	 */
 	public void setClima(String clima) {
 		Clima = clima;
 	}
 
 	/**
-	 * @return the pisoTermico
+	 * Devuelve el nombre del piso térmico en el que se produce el producto 
+	 * @return pisoTermico <code>string</code>, nombre del piso térmico
 	 */
 	public String getPisoTermico() {
 		return PisoTermico;
 	}
 
 	/**
-	 * @param pisoTermico the pisoTermico to set
+	 * Asigna el nombre del piso térmico en el que se produce el producto 
+	 * @param pisoTermico <code>string</code>, nombre del piso térmico
 	 */
 	public void setPisoTermico(String pisoTermico) {
 		PisoTermico = pisoTermico;
@@ -283,7 +317,8 @@ public class RegionConfigurada {
 
 
 	/**
-	 * @return the actividadesEjecutables
+	 * Devuelve el listado de actividades ejecutables
+	 * @return actividadesEjecutables   listado de las actividades 
 	 */
 	public List<SistemaActividadHumana> getActividadesEjecutables() {
 		return ActividadesEjecutables;

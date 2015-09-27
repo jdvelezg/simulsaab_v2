@@ -7,8 +7,14 @@ import gov.nasa.worldwind.render.WWTexture;
 import java.net.URL;
 
 import repast.simphony.visualization.gis3D.style.DefaultMarkStyle;
+import simulaSAAB.agentes.Terreno;
 import simulaSAAB.agentes.Tienda;
+import simulaSAAB.global.VariablesGlobales;
 
+/**
+ * Ajusta la visualización de {@link Tienda} en la representación gráfica <code>GIS 3D</code> de la <code>proyección GIS</code> de <code>repast simphony</code>
+ * 
+ */
 public class TiendaStyle extends DefaultMarkStyle<Tienda> {
 	
 	/**
@@ -25,7 +31,7 @@ public class TiendaStyle extends DefaultMarkStyle<Tienda> {
 			return texture;
 		
 		// BasicWWTexture is useful when the texture is a non-changing image.
-		URL localUrl = WorldWind.getDataFileStore().requestFile("icons/tienda.png");
+		URL localUrl = WorldWind.getDataFileStore().requestFile(VariablesGlobales.TIENDA_ICON);
 		if (localUrl != null)	{
 			return new BasicWWTexture(localUrl, false);
 		}

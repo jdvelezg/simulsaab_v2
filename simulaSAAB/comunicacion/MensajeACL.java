@@ -1,13 +1,23 @@
 package simulaSAAB.comunicacion;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 import simulaSAAB.agentes.AgenteInteligente;
 
+/**
+ * Mensaje enviado entre los agentes
+ * <p>
+ * Sige la estructura del estandar FIPA-ACL
+ * 
+ * @author jdvelezg
+ * 
+ *
+ */
 public class MensajeACL {
 	
-	private static int SECUENCIAID;
+	private static int SECUENCIAID = 0;
 	
 	private String performative;
 	
@@ -27,13 +37,15 @@ public class MensajeACL {
 	
 	private MensajeACL reply_with;
 	
-	private int inReply_to;
+	private Integer inReply_to;
 	
 	private Date replyBy;
 	
 	private List<Object> receiver;
 	
 	private Preposicion content;
+	
+	private boolean isReply;
 
 	/**
 	 * Constructor
@@ -42,246 +54,266 @@ public class MensajeACL {
 		
 		conversationID = new Integer(SECUENCIAID+1);
 		SECUENCIAID++;
+		isReply = false;
 	}
-	
+	/**
+	 * Constructor
+	 * @param conversation_id int, identificador de la conversación al que pertenece el mensaje
+	 */
 	public MensajeACL(int conversation_id){
 		this.conversationID = conversation_id;
+		isReply = false;
 	}
-	
+	/**
+	 * Constructor
+	 * 
+	 * @param conversation_id int, identificador de la conversación al que pertenece el mensaje
+	 * @param performative string, performativa del mensaje
+	 */
 	public MensajeACL(int conversation_id, String performative){
 		this.conversationID = conversation_id;
 		this.performative	= performative;
+		isReply = false;
 	}
 	
 	/**
-	 * 
-	 * @return
-	 * 		Type of communicative act
+	 * Devuelve la performativa del mensaje
+	 * @return	String Type of communicative act
 	 */
 	public String getPerformative() {
 		return performative;
 	}
 	
 	/**
-	 * 
-	 * @param performative
-	 * 			Type of communicative act
+	 * Asigna la performativa del mensaje
+	 * @param performative	Type of communicative act
 	 */
 	public void setPerformative(String performative) {
 		this.performative = performative;
 	}
 
 	/**
-	 * 
-	 * @return
-	 * 		Sender participant in communication
+	 * Devuelve agente que envía el mensaje
+	 * @return AgenteInteligente
 	 */
 	public AgenteInteligente getSender() {
 		return sender;
 	}
 
 	/**
-	 * 
-	 * @param sender
-	 * 		Sender participant in communication
+	 * Asigna agente que envía el mensaje
+	 * @param sender AgenteInteligente que envía el mensaje
 	 */
 	public void setSender(AgenteInteligente sender) {
 		this.sender = sender;
 	}
 
 	/**
-	 * 
-	 * @return
-	 * 		Participant in communication who reply to
+	 * Devuelve el agente al que se debe responder el mensaje
+	 * @return AgenteInteligente al quien responder el mensaje
 	 */
 	public AgenteInteligente getReply_to() {
 		return reply_to;
 	}
 
 	/**
-	 * 
-	 * @param reply_to
-	 * 		Participant in communication who reply to
+	 * Asigna el agente al que se debe responder el mensaje
+	 * @param reply_to	AgenteInteligente al quien responder el mensaje
 	 */
 	public void setReply_to(AgenteInteligente reply_to) {
 		this.reply_to = reply_to;
 	}
 
 	/**
-	 * 
-	 * @return
-	 * 		Description of Content
+	 * Devuelve el lenguaje del mensaje
+	 * @return string
 	 */
 	public String getLanguage() {
 		return language;
 	}
 
 	/**
-	 * 
-	 * @param language
-	 * 		Description of Content
+	 * Asigna el lenguaje del mensaje
+	 * @param language string Description of Content
 	 */
 	public void setLanguage(String language) {
 		this.language = language;
 	}
 
 	/**
-	 * 
-	 * @return
-	 * 		Description of Content
+	 * Devuelve descripción de la codificación usado en el mensaje
+	 * @return string 
 	 */
 	public String getEncoding() {
 		return encoding;
 	}
 
 	/**
-	 * 
-	 * @param encoding
-	 * 		Description of Content
+	 * Asigna la descripción de la codificación usado en el mensaje
+	 * @param encoding string, descripción de la codificación del mensaje
 	 */
 	public void setEncoding(String encoding) {
 		this.encoding = encoding;
 	}
 
 	/**
-	 * 
-	 * @return
-	 * 		Description of Content
+	 * Devuelve la descripción de la ontología usada en el mensaje
+	 * @return string 
 	 */
 	public String getOntology() {
 		return ontology;
 	}
 
 	/**
-	 * 
-	 * @param ontology
-	 * 		Description of Content
+	 * Asigna la descripción de la ontología usada en el mensaje
+	 * @param ontology string descripción de la ontología usada en el mensaje
 	 */
 	public void setOntology(String ontology) {
 		this.ontology = ontology;
 	}
 
 	/**
-	 * 
-	 * @return
-	 * 		Control of conversation
+	 * Devuelve la descripción del protocolo usado en el mensaje
+	 * @return string 
 	 */
 	public String getProtocol() {
 		return protocol;
 	}
 
 	/**
-	 * 
-	 * @param protocol
-	 * 		Control of conversation
+	 * Asigna la descripción del protocolo usado en el mensaje
+	 * @param protocol string descripción del protocolo usado en el mensaje
 	 */
 	public void setProtocol(String protocol) {
 		this.protocol = protocol;
 	}
 
 	/**
-	 * 
-	 * @return
-	 * 		Control of conversation
+	 * Devuelve el identificador de la conversación a la que pertenece el mensaje
+	 * @return string 
 	 */
 	public int getConversationID() {
 		return conversationID;
 	}
 
 	/**
-	 * 
-	 * @param conversationID
-	 * 		Control of conversation
+	 * Asigna el identificador de la conversación a la que pertenece el mensaje
+	 * @param conversationID int identificador de la conversación a la que pertenece el mensaje
 	 */
 	public void setConversationID(int conversationID) {
 		this.conversationID = conversationID;
 	}
 
 	/**
-	 * 
-	 * @return
-	 * 	Control of conversation
+	 * Devuelve la estructura del mensaje mediante el cual se debe responder 
+	 * @return MensajeACL 
 	 */
 	public MensajeACL getReply_with() {
 		return reply_with;
 	}
 
 	/**
-	 * 
-	 * @param reply_with
-	 * 		Control of conversation
+	 * Asigna la estructura del mensaje mediante el cual se debe responder 
+	 * @param reply_with MensajeACL, estructura del mensaje mediante el cual se debe responder
 	 */
 	public void setReply_with(MensajeACL reply_with) {
 		this.reply_with = reply_with;
 	}
 
 	/**
-	 * 
-	 * @return
-	 * 		Control of conversation
+	 * Devuelve el identificador de la conversación a la que pertenece el mensaje de respuesta 
+	 * @return int 		
 	 */
-	public int getInReply_to() {
+	public Integer getInReply_to() {
 		return inReply_to;
 	}
 
 	/**
-	 * 
-	 * @param inReply_to
-	 * 		Control of conversation
+	 * Asigna el identificador de la conversación a la que pertenece el mensaje de respuesta
+	 * @param inReply_to el int identificador de la conversación a la que pertenece el mensaje de respuesta
+	 * 		
 	 */
-	public void setInReply_to(int inReply_to) {
+	public void setInReply_to(Integer inReply_to) {
 		this.inReply_to = inReply_to;
 	}
-
+	/**
+	 * Devuelve la fecha en la que debe ser contestado el mensaje
+	 * @return Date
+	 */
 	public Date getReplyBy() {
 		return replyBy;
 	}
 
 	/**
-	 * 
-	 * @param replyBy
-	 * 		Control of conversation
+	 * Asigna la fecha en la que debe ser contestado el mensaje
+	 * @param replyBy  		
 	 */
 	public void setReplyBy(Date replyBy) {
 		this.replyBy = replyBy;
 	}
 
 	/**
-	 * 
-	 * @return
-	 * 		Participant in communication
+	 * Devuelve un arreglo con los agentes receptores del mensaje
+	 * @return	List<Object> 
 	 */
 	public List<Object> getReceiver() {
 		return receiver;
 	}
 
 	/**
-	 * 
-	 * @param receiver
-	 * 		Participant in communication
+	 * Agrega un agente como receptor del mensaje
+	 * @param receiver	Objeto agente receptor del mensaje
 	 */
 	public void addReceiver(Object receiver) {
+		
+		if(this.receiver==null)
+			this.receiver = new ArrayList<Object>();
+		
 		this.receiver.add(receiver);
 	}
 
 	/**
-	 * 
-	 * @return
-	 * 		Content of message
+	 * Devuelve la preposición del mensaje
+	 * @return Preposicion
 	 */
 	public Preposicion getContent() {
 		return content;
 	}
 
 	/**
-	 * 
-	 * @param content
-	 * 		Content of message
+	 * Asigna la preposición del mensaje
+	 * @param content preposisción del mensaje
 	 */
 	public void setContent(Preposicion content) {
 		this.content = content;
 	}
 	
+	/**
+	 * Devuelve <code>true</code> si el mensje es respuesta un mensaje anterior
+	 * @return boolean 
+	 */
+	public boolean isReply(){
+		return isReply;//this.isReply;
+	}
 	
+	/**
+	 * Fija el mensaje como respuesta un mensaje anterior
+	 */
+	public void setAsReply(){
+		this.isReply = true;
+	}
+	
+	@Override
+	public boolean equals(Object obj){
+		
+		if(obj instanceof MensajeACL){
+			MensajeACL mssg = (MensajeACL)obj;
+			return (this.getConversationID()==mssg.getConversationID() && this.getPerformative().equals(mssg.getPerformative())
+					&& this.getContent().equals(mssg.getContent()))?true:false;
+		}else{
+			return false;
+		}
+		
+	}
 
 }

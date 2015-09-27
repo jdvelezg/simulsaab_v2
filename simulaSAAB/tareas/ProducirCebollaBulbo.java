@@ -13,36 +13,63 @@ import simulaSAAB.comunicacion.Producto;
 import simulaSAAB.comunicacion.Proposito;
 import simulaSAAB.comunicacion.Recurso;
 import simulaSAAB.global.PropositosFactory;
+import simulaSAAB.global.VariablesGlobales;
 import simulaSAAB.global.persistencia.MPAConfigurado;
 import simulaSAAB.global.persistencia.ProductoConfigurado;
-
+/**
+ * Representa la actividad de producción de cebolla de bulbo
+ * @author lfgomezm
+ *
+ */
 public class ProducirCebollaBulbo implements SistemaActividadHumana<Productor> {
-	
+	/**
+	 * Identificador de la actividad
+	 */
 	private final int id;
-	
+	/**
+	 * Registro de la clase usado para depuración <code>Debugging</code>
+	 */
 	private static Logger LOGGER = Logger.getLogger(ProducirCebollaBulbo.class.getName());
-	
+	/**
+	 * Establece el propósito de la tarea
+	 */
 	private static Proposito proposito = new Proposito("Producir cebolla y vender el producto");
-	
+	/**
+	 * Enunciado de la tarea
+	 */
 	private static String Enunciado;
 	
 	private double CostoEjecucion;
 	
 	private Terreno Terreno;
-	
+	/**
+	 * Define el número de meses que demora un terreno en tener una cosecha
+	 */
+	private int tiempoCosechaTerreno;
+	/**
+	 * Instancia de <code>Producto</code> a producir
+	 */
 	private Producto cebollaBulbo;	
-	
+	/**
+	 * Estado actual de la tarea
+	 */
 	private String Estado;
-	
+	/**
+	 * Paso actual de la tarea
+	 */
 	private int paso;
 	
 	private final double Tickinicial;
 	
 	private double DineroInicial;
-	
+	/**
+	 * Instancia del <code>MPA</code> {@link ProcesoAgenteHumano}
+	 */
 	private SistemaActividadHumana moverse;
-	
-	private RegistrarOfertaUnitaria venderProductos;
+	/**
+	 * Instancia del <code>MPA</code> {@link ProcesoAgenteHumano}
+	 */
+	protected SistemaActividadHumana venderProductos;
 
 	/**
 	 * Constructor
@@ -56,37 +83,39 @@ public class ProducirCebollaBulbo implements SistemaActividadHumana<Productor> {
 		this.Enunciado		= mpa.getEnunciado();
 		this.proposito 		= mpa.getProposito();
 		this.CostoEjecucion	= mpa.getCosto();
-		this.paso			= 0;
+		this.paso			= 0;			
 		this.Estado 		= EstadosActividad.READY.toString();
 		
-		Tickinicial	= RunEnvironment.getInstance().getCurrentSchedule().getTickCount();	
+		Tickinicial		= RunEnvironment.getInstance().getCurrentSchedule().getTickCount();
+		venderProductos = new RegistrarOfertaUnitaria();
 	}
 	
 	
 
 	@Override
-	public void secuenciaPrincipalDeAcciones(Productor actor) {
+	public synchronized void secuenciaPrincipalDeAcciones(Productor actor) {
 		
 		if(Estado.equalsIgnoreCase(EstadosActividad.READY.toString())){
 					
 			if(Terreno==null){
-				Terreno	= actor.getTerrenosCultivables().get(0);
-			}
+				Terreno					= actor.getTerrenosCultivables().get(0);
+				tiempoCosechaTerreno 	= Terreno.tiempoParaCosecha();
+			}					
 			
-			this.Estado	= EstadosActividad.RUNNING.toString();
+			DineroInicial 	= new Double(actor.getDinero().getCantidad());			
+			paso			= 1;
+			Estado			= EstadosActividad.RUNNING.toString();
+			
+			this.CostoEjecucion		*= this.Terreno.getHectareas();
+						
 			actor.setEstado("RUNNING");			
-			
-			DineroInicial = new Double(actor.getDinero().getCantidad());
-			paso	= 1;
-			
-			//LOGGER.log(Level.INFO, this.toString() +this.Estado+ " Listo para iniciar. Actor: "+actor.toString());
 		}
 		else if(this.Estado.equalsIgnoreCase(EstadosActividad.RUNNING.toString())){		
 			
 			switch(this.paso){
 			case 1:
 				//LOGGER.log(Level.INFO,this.toString()+" paso1 "+actor.toString()+": "+actor.getEstado());
-				//Preparación del terreno implica arado, fertilización
+				//PreparaciÃ³n del terreno implica arado, fertilizaciÃ³n
 				
 				this.Terreno.setEstado("Preparado");	
 				
@@ -124,26 +153,26 @@ public class ProducirCebollaBulbo implements SistemaActividadHumana<Productor> {
 				
 				Double CurrentTick = RunEnvironment.getInstance().getCurrentSchedule().getTickCount();
 				
-				if(CurrentTick-Tickinicial>=1000){//5 meses
-					//this.paso++;
-				}
-			paso++;
+				if(CurrentTick-Tickinicial>=VariablesGlobales.TICKS_UNMES_DEMORA_MOVIMIENTO*tiempoCosechaTerreno)//de 3 a 6 meses
+					this.paso++;					
+				else if(Tickinicial<1000)//la primera vez se cosecha inmediatamente
+					paso++;
+							
 				break;
 			case 6:				
+				//LOGGER.log(Level.INFO,"paso6 ");
 				
 				Recurso cosecha	= this.Terreno.cosechar(cebollaBulbo);
 
 				//Fija costo unitario: CostoEjecucionMPAPorHectarea*#hectareasUsadas/CantidadCosechada 
-				double precio 	= CostoEjecucion*Terreno.getHectareas()/cosecha.getCantidad();				
+				double precio 	= CostoEjecucion/cosecha.getCantidad();				
 				cosecha.setCostoUnitario(precio);
 				
-				actor.addProducto(cosecha);			
-				venderProductos = new RegistrarOfertaUnitaria();
-				//LOGGER.log(Level.INFO,"paso6 "+actor.getProductos().size());
+				actor.addProducto(cosecha);
+				
 				this.paso++;				
 				break;
-			case 7:				
-				//LOGGER.log(Level.INFO,this.toString()+"paso7 "+actor.getEstado());
+			case 7:					
 				
 				venderProductos.secuenciaPrincipalDeAcciones(actor);
 				/*
@@ -168,12 +197,16 @@ public class ProducirCebollaBulbo implements SistemaActividadHumana<Productor> {
 			
 		}else if(this.Estado.equalsIgnoreCase(EstadosActividad.DONE.toString())){
 			
-			//substrae el costo de ejecución del MPA del dinero del agente
+			//substrae el costo de ejecuciÃ³n del MPA del dinero del agente
 			actor.getDinero().subtractCantidad(CostoEjecucion);
-			//Calcula la utilidad obtenida al ejecutar el MPA				
-			actor.setUltimaUtilidadObtenida(DineroInicial-actor.getDinero().getCantidad());
+			
+			//Calcula la utilidad obtenida al ejecutar el MPA
+			double valorActual		= new Double(actor.getDinero().getCantidad()).doubleValue();
+			double ultimaUtilidad 	= valorActual>DineroInicial?Math.abs(valorActual-DineroInicial):0;	//valorActual-DineroInicial;		
+			actor.setUltimaUtilidadObtenida(ultimaUtilidad);
 			//fija estado del actor en IDLE
-			actor.setEstado("IDLE");			
+			actor.setEstado("IDLE");
+			//LOGGER.info("termina "+actor.toString()+" "+valorActual+"-"+DineroInicial+"="+ultimaUtilidad);
 		}
 		
 	}
@@ -206,6 +239,27 @@ public class ProducirCebollaBulbo implements SistemaActividadHumana<Productor> {
 	public Proposito getProposito() {
 		// TODO Auto-generated method stub
 		return proposito;
+	}
+	
+	public int getId() {
+		return id;
+	}
+
+	@Override 
+	public boolean equals(Object obj){
+		
+		if(obj instanceof SistemaActividadHumana){
+			
+			SistemaActividadHumana act = (SistemaActividadHumana)obj;			
+			return this.id==act.getId();
+		}else{
+			return false;
+		}
+	}
+
+	@Override
+	public double getCosto() {		
+		return this.CostoEjecucion;
 	}
 		
 }

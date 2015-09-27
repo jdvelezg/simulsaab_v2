@@ -4,8 +4,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.logging.Logger;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
@@ -25,37 +27,65 @@ import simulaSAAB.comunicacion.Producto;
 import simulaSAAB.comunicacion.Recurso;
 import simulaSAAB.contextos.PlazaDistrital;
 import simulaSAAB.contextos.SaabContextBuilder;
+import simulaSAAB.global.VariablesGlobales;
 import simulaSAAB.tareas.EstadosActividad;
 import simulaSAAB.tareas.RegistrarDemandaConsolidada;
 import simulaSAAB.tareas.SistemaActividadHumana;
 
+/**
+ * Representa el agente <code>Operador de red de demanda</code>
+ * <p>
+ * Agente Inteligente que opera como un <code>demandante</code> que representa los intereses de otros agentes demandantes
+ * 
+ * @author jdvelezg
+ *
+ */
 public class OperadorRedDemanda extends VendedorFinal implements Demandante {
-	
+		
+	/**
+	* Registro de la clase usado para depuración <code>Debugging</code>
+	*/
+	private static Logger LOGGER = Logger.getLogger(OperadorRedDemanda.class.getName());
+	/**
+	 * Demandas de cada uno de los demandantes representados
+	 */
 	private ConcurrentHashMap<Demandante,Demanda> DemandasConsolidables;
-	
+	/**
+	 * Demandas generadas por el agente
+	 */
 	private Queue<Demanda> demandasConsolidadas;
-	
+	/**
+	 * Instancia del <code>MPA RegistrarDemandaConsolidada</code> 
+	 */
 	private SistemaActividadHumana<Demandante> registrarDemanda;
-	
+	/**
+	 * indica si el agente es operable
+	 */
 	private boolean operable = false;
+	
+	private int delay = 0;
 	
 	
 
 	/**
 	 * Constructor
 	 */
-	public OperadorRedDemanda() {
+	public OperadorRedDemanda(int id) {
 		
-		super();
+		super(id);
 		this.demandasConsolidadas	= new ConcurrentLinkedQueue<Demanda>();
 		this.DemandasConsolidables 	= new ConcurrentHashMap<Demandante,Demanda>();
 		this.registrarDemanda		= new RegistrarDemandaConsolidada();		
 		super.formarIntenciones();		
 	}
 	
-	public OperadorRedDemanda(PlazaDistrital puntoDemanda) {
+	/**
+	 * Constructor de la clase
+	 * @param puntoDemanda plazaDistrital que representa el punto de demanda del agente
+	 */
+	public OperadorRedDemanda(int id, PlazaDistrital puntoDemanda) {
 		
-		super();
+		super(id);
 		this.demandasConsolidadas	= new ConcurrentLinkedQueue<Demanda>();
 		this.DemandasConsolidables 	= new ConcurrentHashMap<Demandante,Demanda>();
 		this.registrarDemanda		= new RegistrarDemandaConsolidada();
@@ -65,17 +95,26 @@ public class OperadorRedDemanda extends VendedorFinal implements Demandante {
 	
 	
 	/**
-	 * Metodo que ejecuta el comportamiento del agente en cada ciclo de reloj enviado por repast
-	 * 
+	 * Metodo que ejecuta el comportamiento del agente en cada ciclo <code>Tick</code>
+	 * <p>
+	 * Itera la actividad <code>RegistrarDemandaConsolidada</code> 
 	 */
+	@Override
 	public void step () {
-		
-		if(registrarDemanda.getEstado().equalsIgnoreCase(EstadosActividad.DONE.toString())){
-			finalizarNutrired();
+		/*
+		 * actua cuando tenga un centro de demanda fijado.
+		 * delay da tiempo a los agentes de formar la nutrired antes de actuar (50 ticks)
+		 */
+		if(isOperable() && delay>50){
+			
+			if(registrarDemanda.getEstado().equalsIgnoreCase(EstadosActividad.DONE.toString())){
+				finalizarNutrired();				
+			}else{
+				registrarDemanda.secuenciaPrincipalDeAcciones(this);
+			}
 		}else{
-			registrarDemanda.secuenciaPrincipalDeAcciones(this);
+			delay++;
 		}
-					
 	}
 
 	@Override
@@ -87,10 +126,10 @@ public class OperadorRedDemanda extends VendedorFinal implements Demandante {
 		 */
 		if(this.demandasConsolidadas.isEmpty()){
 			
-			Map<Producto,Demanda> productosDemandados = new ConcurrentHashMap<Producto,Demanda>();
-			
+			Map<String,Demanda> productosDemandados = new ConcurrentHashMap<String,Demanda>();			
 			//itera los agentes de la nutrired
-			Iterable<Object> demandantes = SaabContextBuilder.NutriredesNetwork.getAdjacent(this);
+			Iterable<Object> demandantes = SaabContextBuilder.NutriredesNetwork.getAdjacent(this);	
+			
 			for(Object o: demandantes){
 				
 				if(o instanceof Demandante){
@@ -107,32 +146,32 @@ public class OperadorRedDemanda extends VendedorFinal implements Demandante {
 					/**
 					 * Consolida las demandas y mapea los productos demandados (necesario cuando existe más de un producto a demandar)
 					 */
-					if(productosDemandados.containsKey(producto)){
+					Double cantidad = new Double(0);				
+					if(productosDemandados.containsKey(producto.getNombre())){
 						
-						Demanda novaDemanda 	= productosDemandados.get(producto);				
-						Double cantidad 		= novaDemanda.getCantidad()+demanda.getCantidad();
+						Demanda novaDemanda = productosDemandados.get(producto.getNombre());				
+						cantidad 			= novaDemanda.getCantidad().doubleValue()+demanda.getCantidad().doubleValue();				
 						novaDemanda.setCantidad(cantidad);
 									
-					}else{				
-						Demanda novaDemanda 	= new Demanda(producto.getNombre(),demanda.getCantidad(),192,false);//192 ciclos -> 8 dias
+					}else{	
+						cantidad = demanda.getCantidad().doubleValue();				
+						Demanda novaDemanda 	= new Demanda(producto.getNombre(),cantidad,VariablesGlobales.TICKS_VIGENCIA_DEMANDA,false);
+						novaDemanda.OBSERVABLE.addObserver(SaabContextBuilder.OBSERVADOR);
 						novaDemanda.setPuntoDemanda(getPuntoDemanda());
 						novaDemanda.setComprador(this);
-						productosDemandados.put(producto, novaDemanda);
-					}
+						productosDemandados.put(producto.getNombre(), novaDemanda);
+					}									
 				}
-					
-				
-				
-			}
+			}//EndFor Demandantes
 			
 			/**
 			 * Cuando son varios productos los pone en cola y retorna el primero.
 			 */
-			Iterator<Producto> productos = productosDemandados.keySet().iterator();
+			Iterator<String> productos = productosDemandados.keySet().iterator();
 			while(productos.hasNext()){
 				
-				Producto pKey = productos.next();
-				this.demandasConsolidadas.add(productosDemandados.get(pKey));
+				String pKey = productos.next();
+				this.demandasConsolidadas.offer(productosDemandados.get(pKey));
 			}			
 			
 		}		
@@ -143,52 +182,37 @@ public class OperadorRedDemanda extends VendedorFinal implements Demandante {
 	@Override
 	public void gestionarPedidos(){
 		
-		while(super.pedidosRecibidos()){
+		while(pedidosRecibidos()){
 			
-			OrdenDePedido ordenPedido	= pedidosRecibidos.poll();
-			List<OrdenDeCompra> ordenes = ordenPedido.getOrdenesDeCompra();			
-			//Actualiza obserbable
-			ordenPedido.OBSERVABLE.PedidoEntregado();
+			OrdenDeCompra orden			= pedidosRecibidos.poll();				
+			Producto ProductoComprado 	= orden.getOferta().getProducto();
+			Recurso compra				= orden.getDetalleCompra();
+			Dinero precioCompra			= orden.getPagoAcordado();
+			Double precioUnitario		= precioCompra.getCantidad()/compra.getCantidad();
 			
-			for(OrdenDeCompra orden:ordenes){
-				
-				Producto ProductoComprado 	= orden.getOferta().getProducto();
-				Recurso compra				= orden.getDetalleCompra();
-				Double precioCompra			= orden.getOferta().getPrecio();
-				Double precioUnitario		= precioCompra/compra.getCantidad();
-				
-				Iterator<Demandante> demandantes = this.DemandasConsolidables.keySet().iterator();
-				
-				//itera por cada agente representado
-				while(demandantes.hasNext()){
-					
-					Demandante representado 	= demandantes.next();
-					Demanda demanda				= DemandasConsolidables.get(representado);					
-					//revisa si la demanda corresponde al producto
-					if(demanda.getProducto().equals(ProductoComprado)){
-						//si: crea un recurso equivalente a la demanda y se lo enrega
-						Double cantidadDemandada 	= demanda.getCantidadDemandanda();
-						Double monto 				= cantidadDemandada*precioUnitario;
-						Dinero dineroDemandante 	= representado.getDinero();
-						//Cobra y entrega los productos
-						dineroDemandante.subtractCantidad(monto);
-						compra.removeCantidad(cantidadDemandada);						
-						representado.distribuirProductosEnTienda(new Recurso(ProductoComprado,demanda.getCantidadDemandanda()));
-						/*
-						 * Destruye el network de consolidacion, y pone al agente en estado RUNNING
-						 * para que continue su ciclo de experiencia-acción
-						 * 
-						 * TODO en caso de varios productos debe haber una iteración diferente. 
-						 */
-						RepastEdge<Object> edge = SaabContextBuilder.NutriredesNetwork.getEdge(this, representado);
-						SaabContextBuilder.NutriredesNetwork.removeEdge(edge);
-						representado.setEstado("RUNNING");	
-					}					
-				}
-			}					
-		}//End-While
+			Iterator<Demandante> demandantes = this.DemandasConsolidables.keySet().iterator();
 		
-		finalizarNutrired();
+			//itera por cada agente representado
+			while(demandantes.hasNext()){
+				
+				Demandante representado 	= demandantes.next();
+				Demanda demanda				= DemandasConsolidables.get(representado);
+				Producto productoRequerido	= demanda.getProducto();
+				//revisa si la demanda corresponde al producto
+				if(productoRequerido.equals(ProductoComprado)){
+					//si: crea un recurso equivalente a la demanda y se lo enrega
+					Double cantidadDemandada 	= demanda.getCantidadDemandanda();
+					Double monto 				= cantidadDemandada*precioUnitario;
+					//Cobra y entrega los productos
+					representado.getDinero().subtractCantidad(monto);					
+					
+					//compra.removeCantidad(cantidadDemandada);					
+					representado.distribuirProductosEnTienda(new Recurso(ProductoComprado,cantidadDemandada),monto.doubleValue());
+					//LOGGER.info(representado.toString()+" demando: "+cantidadDemandada+" comprado a: "+monto.toString());
+				}					
+			}
+								
+		}//End-While
 	}
 
 	@Override
@@ -198,22 +222,45 @@ public class OperadorRedDemanda extends VendedorFinal implements Demandante {
 	}
 	
 	/**
-	 * DEPRECATED: SE USA EL SISTEMA DE ACTIVIDAD HUMANA CONFORMAR NUTRIRED
 	 * Agrega un agente Demandante a la nutrired
-	 * @param agente
+	 * @deprecated La nutrired se conforma como parte de las actividades del <code>MPA</code>	 * 
+	 * @param agente agente a agregar a la nutrired
 	 */
 	public void addAgenteRepresentado(Demandante agente){
 		//this.DemandasConsolidables
 	}
 	
 	/**
-	 * Una vez registrada la demanda consolidada y realizada la compra
-	 * distribuye las ordenes de compra para cada agente representado
+	 * Distribuye las ordenes de compra para cada agente representado una vez registrada la demanda consolidada y realizada la compra	 * 
 	 */
-	private void finalizarNutrired(){		
+	private void finalizarNutrired(){			
+		
+		/*
+		 * Destruye el network de consolidacion, y pone al agente en estado RUNNING
+		 * para que continue su ciclo de experiencia-acción
+		 * 
+		 * TODO en caso de varios productos debe haber una iteración diferente. 
+		 */
+		try{			
+			Iterable<Object> demandantes = SaabContextBuilder.NutriredesNetwork.getAdjacent(this);
+			for(Object o: demandantes){
 				
-		//elimina el operador de red de demanda
-		SaabContextBuilder.BogotaContext.remove(this);	
+				if(o instanceof Demandante){				
+				
+					Demandante representado = (Demandante)o;			
+					representado.setEstado("RUNNING");
+				}
+				RepastEdge<Object> edge = SaabContextBuilder.NutriredesNetwork.getEdge(this, o);			
+				SaabContextBuilder.NutriredesNetwork.removeEdge(edge);
+			}		
+			//elimina el operador de red de demanda, y lo elimina del schedule
+			operable = false;
+			SaabContextBuilder.BogotaContext.remove(this);
+			
+		}catch(Exception e){
+			//no hace nada
+		}
+			
 	}	
 	
 	@Override
@@ -237,17 +284,23 @@ public class OperadorRedDemanda extends VendedorFinal implements Demandante {
 		 * Crea un objeto Schedule y agrega el objeto para que su metodo step sea ejecutado 
 		 * en cada tick de la simulación
 		 */
-		double tick = RunEnvironment.getInstance().getCurrentSchedule().getTickCount();
+		//NO HACE FALTA - POR HERENCIA EL SCHEDULER LO EJECUTA
+		
+		/*double tick = RunEnvironment.getInstance().getCurrentSchedule().getTickCount();
 		double start = tick < 1 ? 1 : tick + 2;
-		int interval = 1;
+		int interval = 2;
 		
 		ScheduleParameters params = ScheduleParameters.createRepeating(start,interval);
 		ISchedule sch = RunEnvironment.getInstance().getCurrentSchedule();
-		sch.schedule(params, this, "step");
+		sch.schedule(params, this, "step");*/
 		
 		operable = true;
 	}
 	
+	/**
+	 * Indica si el agente puede iniciar su operación al tener todos sus parámetros internos configurados para operar la nutrired
+	 * @return booelan <code>true</code> en caso de ser operable
+	 */
 	public boolean isOperable(){
 		return this.operable;
 	}

@@ -12,9 +12,15 @@ import simulaSAAB.contextos.ObjetoMovil;
 import simulaSAAB.contextos.SaabContextBuilder;
 
 import com.vividsolutions.jts.geom.Coordinate;
-
-public class RecolectarProductos extends TransitarCircular {
-	
+/**
+ * Representa la actividad de recolección de productos en un nodo de origen para ser entregado en un nodo de destino
+ * @author lfgomezm
+ *
+ */
+public class RecolectarProductos extends Transitar {
+	/**
+	 * Registro de la clase usado para depuración <code>Debugging</code>
+	 */
 	private static Logger LOGGER = Logger.getLogger(RecolectarProductos.class.getName());
 	
 	private NodoSaab nodoOrigen;
@@ -22,7 +28,9 @@ public class RecolectarProductos extends TransitarCircular {
 	private CentroUrbano puebloDestino;
 	
 	private List<OrdenDeServicio> ordenes;
-	
+	/**
+	 * Estado actual de la tarea
+	 */
 	private String Estado;
 	
 	/**
@@ -31,7 +39,13 @@ public class RecolectarProductos extends TransitarCircular {
 	public RecolectarProductos() {
 		super();
 	}
-
+	/**
+	 * Constructor
+	 * 
+	 * @param nodoOrigen nodoSaab, nodo en el que se ejecuta la recolección
+	 * @param puebloDestino centroUrbano, pueblo de destino de la entrega
+	 * @param ordenes ordenDeServicio, orden(es) de servicio
+	 */
 	public RecolectarProductos(NodoSaab nodoOrigen, CentroUrbano puebloDestino, List<OrdenDeServicio> ordenes) {
 		
 		super(nodoOrigen.getRoadAccess(), puebloDestino.getRoadAccess());
@@ -43,7 +57,7 @@ public class RecolectarProductos extends TransitarCircular {
 	}
 	
 	@Override
-	public void secuenciaPrincipalDeAcciones(ObjetoMovil actor) {
+	public synchronized void secuenciaPrincipalDeAcciones(ObjetoMovil actor) {
 		
 		Coordinate actor_coord = actor.getGeometria().getCoordinate();
 		

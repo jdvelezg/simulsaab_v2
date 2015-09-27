@@ -8,8 +8,12 @@ import java.net.URL;
 
 import repast.simphony.visualization.gis3D.style.DefaultMarkStyle;
 import simulaSAAB.agentes.Terreno;
+import simulaSAAB.global.VariablesGlobales;
 
-
+/**
+ * Ajusta la visualización de {@link Terreno} en la representación gráfica <code>GIS 3D</code> de la <code>proyección GIS</code> de <code>repast simphony</code>
+ *
+ */
 public class TerrenoStyle extends DefaultMarkStyle<Terreno> {
 	
 	/**
@@ -26,7 +30,7 @@ public class TerrenoStyle extends DefaultMarkStyle<Terreno> {
 			return texture;
 		
 		// BasicWWTexture is useful when the texture is a non-changing image.
-		URL localUrl = WorldWind.getDataFileStore().requestFile("icons/terreno.png");
+		URL localUrl = WorldWind.getDataFileStore().requestFile(VariablesGlobales.TERRENO_ICON);
 		if (localUrl != null)	{
 			return new BasicWWTexture(localUrl, false);
 		}

@@ -7,7 +7,9 @@ import repast.simphony.context.DefaultContext;
 import simulaSAAB.global.VariablesGlobales;
 
 /**
- * @author dampher
+ * Contexto para las ubicaciones rurales presentes en la simulación
+ * 
+ * @author jdvelezg
  *
  */
 public class RuralContext extends DefaultContext<Object> {

@@ -6,7 +6,12 @@ import gov.nasa.worldwind.render.SurfaceShape;
 import java.awt.Color;
 
 import repast.simphony.visualization.gis3D.style.SurfaceShapeStyle;
+import simulaSAAB.agentes.VendedorFinal;
 
+/**
+ * Ajusta la visualización de {@link ViaTransitable} en la representación gráfica <code>GIS 3D</code> de la <code>proyección GIS</code> de <code>repast simphony</code>
+ *
+ */
 public class ViaTransitableStyle implements SurfaceShapeStyle<ViaTransitable> {
 
 	@Override

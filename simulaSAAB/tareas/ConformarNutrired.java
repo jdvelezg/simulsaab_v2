@@ -15,33 +15,62 @@ import simulaSAAB.agentes.OperadorRedDemanda;
 import simulaSAAB.agentes.VendedorFinal;
 import simulaSAAB.comunicacion.Proposito;
 import simulaSAAB.contextos.SaabContextBuilder;
-
+import simulaSAAB.global.persistencia.MPAConfigurado;
+/**
+ * Representa la conformación de nutriredes en el SISAAB
+ * @author lfgomezm
+ *
+ */
 public class ConformarNutrired implements SistemaActividadHumana<Demandante> {
-	
-	
+	/**
+	 * Identificador de la nutrired
+	 */
+	private final int id;
+	/**
+	 * Registro de la clase usado para depuración <code>Debugging</code>
+	 */
 	private static Logger LOGGER = Logger.getLogger(ConformarNutrired.class.getName());
-	
+	/**
+	 * Establece el enunciado de la tarea
+	 */
 	private static String ENUNCIADO = "Conformar nutrired";
-	
+	/**
+	 * Propósito de la tarea
+	 */
 	private Proposito Proposito;
-	
+	/**
+	 * Estado actual de la tarea
+	 */
 	private String Estado;
-	
+	/**
+	 * Paso actual de la tarea
+	 */
 	private int paso;
 	
 	private OperadorRedDemanda operadorNutriRed;
 
 	/**
-	 * Contructor
+	 * Constructor
 	 */
 	public ConformarNutrired() {
 		
-		this.Estado 			= EstadosActividad.READY.toString();		
-		this.operadorNutriRed 	= new OperadorRedDemanda();				
+		MPAConfigurado mpa 	=new MPAConfigurado("ConsolidarDemanda");
+		
+		this.id					= mpa.getId();
+		this.Estado 			= EstadosActividad.READY.toString();
+		int identificador		= SaabContextBuilder.getIdentificadorAgente();
+		this.operadorNutriRed 	= new OperadorRedDemanda(identificador);				
 	}
 	
+	/**
+	 * Asigna un operador a la nutrired 
+	 * @param operador operador de la red de demanda asignado como operador de la nutrired
+	 */
 	public ConformarNutrired(OperadorRedDemanda operador){
 		
+		MPAConfigurado mpa 	=new MPAConfigurado("ConsolidarDemanda");
+		
+		this.id					= mpa.getId();
 		this.operadorNutriRed 	= operador;
 		this.Estado 			= EstadosActividad.READY.toString();
 	}
@@ -49,7 +78,7 @@ public class ConformarNutrired implements SistemaActividadHumana<Demandante> {
 	
 	@Override
 	public void secuenciaPrincipalDeAcciones(Demandante actor) {
-		
+	
 		
 		if(this.Estado.equalsIgnoreCase(EstadosActividad.READY.toString())){
 									
@@ -62,31 +91,29 @@ public class ConformarNutrired implements SistemaActividadHumana<Demandante> {
 					operadorNutriRed.setPuntoDemanda(actor.getPuntoDemanda());
 					SaabContextBuilder.NutriredesNetwork.addEdge(operadorNutriRed, actor.getPuntoDemanda());
 				}
-								
-				//Agrega el actor en el Operador como agente representado
-				//operadorNutriRed.addAgenteRepresentado(actor); // DEPRECATED, lee los edges del Network
+							
 				
+				//LOGGER.log(Level.INFO," Agregando Agente "+actor.toString()+" a la nutrired");
 				//crea una relacion entre el agente y el operador de demanda				
-				SaabContextBuilder.NutriredesNetwork.addEdge(operadorNutriRed, actor);
-				Estado	=EstadosActividad.DONE.toString();
+				SaabContextBuilder.NutriredesNetwork.addEdge(operadorNutriRed, actor);				
 				actor.setEstado("WAITING");
 				/*
 				 * Cambia intencion de consolidacion para que le agente no se asocie con otras redes
 				 */
 				actor.setIntencionConsolidacion(false);
 				
+				Estado	=EstadosActividad.DONE.toString();
+				
 			}else{
-				this.Estado	=EstadosActividad.DONE.toString();
 				actor.setEstado("IDLE");
-				LOGGER.log(Level.SEVERE,this.toString()+" Agente rechazado Nutrired: El agente no se encuentra en el contexto distrital");
+				this.Estado	=EstadosActividad.DONE.toString();				
+				LOGGER.log(Level.SEVERE," Agente rechazado Nutrired: El agente no se encuentra en el contexto distrital");
 			}	
 			
 			
-		}else if(this.Estado.equalsIgnoreCase(EstadosActividad.RUNNING.toString())){
-			
+		}else if(this.Estado.equalsIgnoreCase(EstadosActividad.RUNNING.toString())){	
 			
 		}else if(this.Estado.equalsIgnoreCase(EstadosActividad.DONE.toString())){
-			
 			//LOGGER.log(Level.INFO,this.toString()+" DONE: -DOING NOTHING");
 		}
 	}
@@ -114,6 +141,29 @@ public class ConformarNutrired implements SistemaActividadHumana<Demandante> {
 	@Override
 	public Proposito getProposito() {
 		return this.Proposito;
+	}
+
+	@Override
+	public int getId() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+	
+	@Override
+	public double getCosto() {
+		return 0;
+	}
+	
+	@Override 
+	public boolean equals(Object obj){
+		
+		if(obj instanceof SistemaActividadHumana){
+			
+			SistemaActividadHumana act = (SistemaActividadHumana)obj;			
+			return this.id==act.getId();
+		}else{
+			return false;
+		}
 	}
 
 }

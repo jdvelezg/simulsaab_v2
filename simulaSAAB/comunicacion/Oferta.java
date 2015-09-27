@@ -16,93 +16,134 @@ import simulaSAAB.global.persistencia.AgentTrackObservable;
 import simulaSAAB.global.persistencia.ProductoConfigurado;
 import simulaSAAB.tareas.ProducirCebollaBulbo;
 
+/**
+ * Representa el concepto de <code>oferta</code> usado en los registros del SISAAB y en la ontología para comunicación entre los agentes  
+ * 
+ * @author jdvelezg
+ *
+ */
 public class Oferta implements Concepto {
 	
-	private static Logger LOGGER = Logger.getLogger(Oferta.class.getName());
-	
-	public final OfertaTrack OBSERVABLE = new OfertaTrack(); 
-	
 	/**
-	 * String producto. Nombre del producto ofertado.
+	 * Utilizada para la asignación de identificadores consecutivos a las ofertas
 	 */
-	private final String nombreproducto;
+	private static int CONSECUTIVO; 
 	/**
-	 * Recurso Productos. Conjunto de Recursos que describen el producto ofertado y su cantidad 
+	* Registro de la clase usado para depuración <code>Debugging</code>
+	*/
+	private static Logger LOGGER = Logger.getLogger(Oferta.class.getName());
+	/**
+	 * Identificador unico dle producto
+	 */
+	private final int id;
+	/**
+	 * agrega funcionalidad <code>observable</code> a la clase
+	 */
+	private final OfertaTrack OBSERVABLE = new OfertaTrack(); 	
+	/**
+	 * nombre del producto ofertado.
+	 */
+	private String nombreproducto;
+	/**
+	 * Recurso que describe el producto ofertado y su cantidad 
 	 */
 	private Recurso Productos;
 	/**
-	 * int Vigencia. Contiene el número de ciclos que una oferta esta vigente
+	 * número de ciclos que una oferta esta vigente
 	 */
 	private int Vigencia;
 	/**
-	 * boolean Consolidable. Indica si la oferta puede ser consolidada con otras.
+	 * indica si la oferta puede ser consolidada con otras
 	 */
 	private boolean Consolidable;
 	/**
-	 * Double precio. Precio total de la oferta
+	 * precio total de la oferta
 	 */
 	private Double precio;
 	/**
-	 * String Estado. Describe el estado de la oferta
+	 * describe el estado de la oferta:
 	 * - VIGENTE
 	 * - VENCIDA
 	 * - VENDIDA
 	 * - CREADA
 	 */
 	private String Estado;
-	/**
-	 * Guarda el ciclo de tiempo en que fue registrada la oferta, para calcular su vencimiento
-	 */
+	
 	private Double Tickinicial;
 	/**
-	 * Oferente vendedor. EL agente que realiza la oferta
+	 * agente que realiza la oferta
 	 */
 	private Oferente vendedor; 
 	/**
-	 * CentroUrbano puntoOferta. El punto de oferta al que corresponde la oferta
+	 * punto de oferta al que corresponde la oferta
 	 */
 	private CentroUrbano puntoOferta;
 	/**
-	 * Ubicacion fisica de la oferta
+	 * uUbicacion de la oferta
 	 */
 	private Coordinate ubicacion;
 	
 	/**
-	 * Constructor
+	 * Cosntructor
+	 * @param ofertaid id de la oferta
 	 */
-	public Oferta(Recurso producto) {		
+	public Oferta(int ofertaid){
+		this.id = ofertaid;
+	}
+	/**
+	 * Constructor
+	 * @param producto recurso ofertado
+	 */
+	public Oferta(Recurso producto) {
+		this.id = setId();
 		this.nombreproducto = producto.getProducto().getNombre();
 		this.Productos		= producto;
 	}
-	
+	/**
+	 * Constructor
+	 * @param productos recurso ofertado
+	 * @param ciclosVigencia vigencia de la oferta
+	 * @param consolidable <ocde>true</code> si la oferta es consolidable
+	 * @param precio precio total de la oferta
+	 */
 	public Oferta(Recurso productos, int ciclosVigencia, boolean consolidable, Double precio){
 				
-		
+		this.id = setId();
 		this.nombreproducto = productos.getProducto().getNombre();
 		this.Productos		= productos;
 		this.Vigencia 		= ciclosVigencia;
 		this.Consolidable 	= consolidable;
-		this.precio			= precio;
-		this.Estado			="CREADA";		
+		this.precio			= new Double(precio.doubleValue());
+		this.Estado			="CREADA";
+		
+		this.Productos.setCostoUnitario(this.precio/this.Productos.getCantidad());
 	}
 	
 	/**
-	 * Calcula el vencimiento de la oferta despues de ser registrada
+	 * Devuelve el id consecutivo a la oferta, e incrementa el consecutivo estático
+	 * @return int id consecutivo
 	 */
-	//@ScheduledMethod (interval = 1)
+	private int setId(){		
+		int i =this.CONSECUTIVO+1;
+		this.CONSECUTIVO++;
+		return i;
+	}
+	
+	/**
+	 * Verifica en cada ciclo de tiempo si la oferta debe darse por vencida
+	 */	
 	public void step () {
 	
 		if(vigente()){
 			
 			Double CurrentTick = RunEnvironment.getInstance().getCurrentSchedule().getTickCount();
-			if(CurrentTick - Tickinicial>Vigencia)
+			if(CurrentTick >Tickinicial+Vigencia)
 				this.setVencida();
 		}
 	}
 	
 	/**
-	 * Devuelve True si la oferta ya fué vendida, Flase en caso que permanezca sin ser atendida
-	 * 
+	 * Devuelve <code>true</code> si la oferta ya fué vendida, <code>false</code> en caso que permanezca sin ser atendida	 * 
 	 * @return boolean
 	 */
 	public boolean vendida(){
@@ -114,8 +155,8 @@ public class Oferta implements Concepto {
 	}
 	
 	/**
-	 * Devuelve True si la oferta continua vigente
-	 * @return
+	 * Devuelve <code>true</code> si la oferta continua vigente
+	 * @return boolean
 	 */
 	public boolean vigente(){
 		
@@ -126,7 +167,7 @@ public class Oferta implements Concepto {
 	}
 	
 	/**
-	 * Devuelve el listado de recursos incluidos en la oferta
+	 * Devuelve el recurso de la oferta
 	 * @return Recurso
 	 */
 	public Recurso getProductos() {
@@ -151,8 +192,8 @@ public class Oferta implements Concepto {
 	}
 	
 	/**
-	 * Define los productos que son ofertados
-	 * @param producto
+	 * Asigna los productos ofertados
+	 * @param producto arreglo de recursos a ser ofertados
 	 */
 	public void setProductosOfertados(List<Recurso> producto) {
 		
@@ -168,8 +209,8 @@ public class Oferta implements Concepto {
 	}
 	
 	/**
-	 * Separa de la oferta inicial una cantidad determinada de producto para ser vendido
-	 * @param cantidad
+	 * Separa de la oferta inicial una cantidad determinada de producto
+	 * @param cantidad cantidad del producto a ser separado
 	 */
 	public Oferta separeCompra(Double cantidad){
 		
@@ -189,86 +230,164 @@ public class Oferta implements Concepto {
 		return subOferta;
 		
 	}
-	
+	/**
+	 * Asigna el precio de la oferta
+	 * @param precio double valor de la oferta
+	 */
 	public void setPrecio(Double precio){
 		
 		this.precio = precio;
 	}
-	
+	/**
+	 * Devuelve el precio de la oferta
+	 * @return double
+	 */
 	public Double getPrecio(){
 		
 		return precio;
 	}
 
+	/**
+	 * Devuelve la vigencia configurada para la oferta
+	 * @return int
+	 */
 	public int getVigencia() {
 		return Vigencia;
 	}
-
+	/**
+	 * Asigna la vigencia de la oferta
+	 * @param vigencia numero de ciclos que la oferta debe permanecer vigente
+	 */
 	public void setVigencia(int vigencia) {
 		Vigencia = vigencia;
 	}
-
+	/**
+	 * Devuelve <code>true</code> si la oferta es consolidable, <code>false</code> en caso contrario
+	 * @return boolean
+	 */
 	public boolean isConsolidable() {
 		return Consolidable;
 	}
-
+	/**
+	 * Configura la oferta como consolidable
+	 * @param consolidable
+	 */
 	public void setConsolidable(boolean consolidable) {
 		Consolidable = consolidable;
 	}
-
+	/**
+	 * Devuelve el estado de la oferta
+	 * @return string
+	 */
 	public String getEstado() {
 		return Estado;
 	}
-	
+	/**
+	 * Asigna el estado de la oferta a 'vendida'
+	 */
 	public void setVendida(){
-		setEstado("VENDIDA");
+		if(!Estado.equalsIgnoreCase("VENDIDA")){
+			setEstado("VENDIDA");
+			this.OBSERVABLE.setOfertaRegistrada();
+		}		
 	}
-
+	/**
+	 * Asigna el estado de la oferta
+	 * @param estado string estado de la oferta
+	 */
 	public void setEstado(String estado) {				
 			Estado = estado;
+			this.OBSERVABLE.setOfertaRegistrada();
 	}
-	
+	/**
+	 * Asigna el estado de la oferta como 'vigente'
+	 */
 	public void setVigente(){
 		
 		Tickinicial	= RunEnvironment.getInstance().getCurrentSchedule().getTickCount();
 		setEstado("VIGENTE");
-		OBSERVABLE.setOfertaRegistrada();
 	}
-	
+	/**
+	 * Asigna el estado de la oferta como 'vencida'
+	 */
 	public void setVencida(){
 		setEstado("VENCIDA");
 	}
-	
+	/**
+	 * Devuelve la cantidad de productos ofertados
+	 * @return double
+	 */
 	public Double getCantidad(){
 		
 		return Productos.getCantidad();
 	}
-
+	/**
+	 * Devuelve el agente que genera la oferta
+	 * @return Oferente agente oferente
+	 */
 	public Oferente getVendedor() {
 		return vendedor;
 	}
-
+	/**
+	 * Asigna el agente que genera la oferta
+	 * @param vendedor agente oferente que genera la oferta
+	 */
 	public void setVendedor(Oferente vendedor) {
 		this.vendedor = vendedor;
 	}
-
+	/**
+	 * Devuelve el punto de oferta que le corresponde
+	 * @return CentroUrbano punto de oferta
+	 */
 	public CentroUrbano getPuntoOferta() {
 		return puntoOferta;
 	}
-
+	/**
+	 * Asigna el punto de oferta que le corresponde
+	 * @param puntoOferta CentroUrbano correspondiente al punto de oferta
+	 */
 	public void setPuntoOferta(CentroUrbano puntoOferta) {
 		this.puntoOferta = puntoOferta;
 	}
-
+	/**
+	 * Devuelve la ubicación de la oferta
+	 * @return Coordinate coordenadas de ubicación de la oferta
+	 */
 	public Coordinate getUbicacion() {
 		return ubicacion;
 	}
-
+	/**
+	 * Asigna la ubicación de la oferta
+	 * @param ubicacion coordenadas de ubicación de la oferta
+	 */
 	public void setUbicacion(Coordinate ubicacion) {
 		this.ubicacion = ubicacion;
 	}
-	
-	
+	/**
+	 * Devuelve el identificador de la oferta
+	 * @return id int 
+	 */
+	public int getId() {
+		return id;
+	}
+		
+	/**
+	 * Asigna el recurso ofertado
+	 * @param productos
+	 */
+	public void setProductos(Recurso productos) {
+		Productos = productos;
+		this.nombreproducto = productos.getProducto().getNombre();
+	}
+
+
+
+	/** 
+	 * Clase anidada a la que se le delega la funcionalidad <code>obserbable</code> a la clase <code>Oferta</code>
+	 * 
+	 * @author jdvelezg
+	 *
+	 */
 	public class OfertaTrack extends AgentTrackObservable{
 		
 		private Double tick;
@@ -283,6 +402,8 @@ public class Oferta implements Concepto {
 		
 		private Double cantidad;
 		
+		private String estado;
+		
 		/**
 		 * Constructor
 		 */
@@ -293,7 +414,9 @@ public class Oferta implements Concepto {
 		}
 		
 		/**
-		 * reporta el registro de la demanda
+		 * reporta el registro de la oferta
+		 * <p>
+		 * es llamado en setVigente, setVendida, setEstado, SISaab::generarOrdenCompra
 		 */
 		public void setOfertaRegistrada(){
 			
@@ -302,6 +425,7 @@ public class Oferta implements Concepto {
 			this.producto	= Oferta.this.getNombreProducto();						
 			this.cantidad	= Oferta.this.getCantidad();
 			this.precio		= Oferta.this.precio;
+			this.estado		= Oferta.this.Estado;
 			
 			super.setChanged();
 			super.notifyObservers(this);
@@ -310,18 +434,15 @@ public class Oferta implements Concepto {
 		@Override
 		public String dataLineString(String separador) {			
 			
-			return tick.toString()+separador+ofertaID+separador+oferenteID+separador+producto+separador+precio.toString()+separador+cantidad.toString()+separador;
+			return tick.toString()+separador+ofertaID+separador+oferenteID+separador+producto+separador+precio.toString()+separador+cantidad.toString()+separador+estado+separador;
 		}
 
 		@Override
 		public String dataLineStringHeader(String separador) {
 			
-			return "tick"+separador+"Oferta_ID"+separador+"Oferente_ID"+separador+"Producto"+separador+"Precio"+separador+"Cantidad"+separador;
+			return "tick"+separador+"Oferta_ID"+separador+"Oferente_ID"+separador+"Producto"+separador+"Precio"+separador+"Cantidad"+separador+"Estado";
 		}
-		
-		
-		/**Getters & Setters **/
-		
+				
 		
 		public Double getTick() {
 			return tick;
